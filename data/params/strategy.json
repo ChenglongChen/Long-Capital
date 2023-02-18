@@ -1,17 +1,17 @@
 {
-    "cn_csi300_open_CSRankNorm_mse": {
+    "cn_csi300_open_CSRankNorm_mse_IdentityReweighter": {
         "topk": 10,
         "n_drop": 3
     },
-    "cn_csi300_open_CSRankNorm_mse_neutralize": {
+    "cn_csi300_open_CSRankNorm_mse_IdentityReweighter_neutralize": {
         "topk": 10,
         "n_drop": 2
     },
-    "cn_csi300_open_CSZScoreNorm_mse": {
+    "cn_csi300_open_CSZScoreNorm_mse_IdentityReweighter": {
         "topk": 6,
         "n_drop": 1
     },
-    "cn_csi300_open_CSZScoreNorm_mse_neutralize": {
+    "cn_csi300_open_CSZScoreNorm_mse_IdentityReweighter_neutralize": {
         "topk": 6,
         "n_drop": 1
     }

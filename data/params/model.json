@@ -1,5 +1,5 @@
 {
-    "cn_csi300_open_CSRankNorm_mse": {
+    "cn_csi300_open_CSRankNorm_mse_IdentityReweighter": {
         "colsample_bytree": 0.8879,
         "lambda_l1": 205.6999,
         "lambda_l2": 580.9768,
@@ -7,7 +7,7 @@
         "num_leaves": 210,
         "subsample": 0.8789
     },
-    "cn_csi300_open_CSRankNorm_mse_neutralize": {
+    "cn_csi300_open_CSRankNorm_mse_IdentityReweighter_neutralize": {
         "colsample_bytree": 0.8879,
         "lambda_l1": 205.6999,
         "lambda_l2": 580.9768,
@@ -15,7 +15,7 @@
         "num_leaves": 210,
         "subsample": 0.8789
     },
-    "cn_csi300_open_CSZScoreNorm_mse": {
+    "cn_csi300_open_CSZScoreNorm_mse_IdentityReweighter": {
         "colsample_bytree": 0.8879,
         "lambda_l1": 205.6999,
         "lambda_l2": 580.9768,
@@ -23,7 +23,7 @@
         "num_leaves": 210,
         "subsample": 0.8789
     },
-    "cn_csi300_open_CSZScoreNorm_mse_neutralize": {
+    "cn_csi300_open_CSZScoreNorm_mse_IdentityReweighter_neutralize": {
         "colsample_bytree": 0.8879,
         "lambda_l1": 205.6999,
         "lambda_l2": 580.9768,
