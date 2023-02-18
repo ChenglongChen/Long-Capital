@@ -1,0 +1,34 @@
+{
+    "cn_csi300_open_CSRankNorm_mse": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "cn_csi300_open_CSRankNorm_mse_neutralize": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "cn_csi300_open_CSZScoreNorm_mse": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "cn_csi300_open_CSZScoreNorm_mse_neutralize": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    }
+}
