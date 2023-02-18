@@ -4,8 +4,8 @@
         "n_drop": 3
     },
     "cn_csi300_open_CSRankNorm_mse_neutralize": {
-        "topk": 6,
-        "n_drop": 1
+        "topk": 10,
+        "n_drop": 2
     },
     "cn_csi300_open_CSZScoreNorm_mse": {
         "topk": 6,
