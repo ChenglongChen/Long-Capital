@@ -16,14 +16,14 @@ def get_biggest_change_features(corrs, n):
     return worst_n
 
 
-def get_riskest_features(df):
+def get_riskest_features(df, N=50):
     feature_cols = df["feature"].columns
     # getting the per era correlation of each feature vs the target
     all_feature_corrs = df.groupby(level=["datetime"]).apply(
         lambda d: d["feature"][feature_cols].corrwith(d["label"]["LABEL0"]))
 
     # find the riskiest features by comparing their correlation vs the target in half 1 and half 2 of training data
-    riskiest_features = get_biggest_change_features(all_feature_corrs, 50)
+    riskiest_features = get_biggest_change_features(all_feature_corrs, N)
     return riskiest_features
 
 

@@ -15,13 +15,14 @@ MODEL_LOSS = "mse"
 LABEL_NORM = "CSZScoreNorm"
 ENABLE_REWEIGHTER = False
 ENABLE_NEUTRALIZE = False
+ENABLE_GTJA_ALPHA = False
 
 SEARCH_STRATEGY_PARAMS = True
 SEARCH_MODEL_PARAMS = False
 
 # trading
 # the day when you have the stock data after close
-PRED_DATE = "2023-02-17"
+PRED_DATE = "2023-02-20"
 TEST_END_DATE = PRED_DATE
 BACKTEST_END_DATE = get_diff_date(PRED_DATE, -1)
 

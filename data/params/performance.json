@@ -1,66 +1,66 @@
 {
     "cn_csi300_open_CSRankNorm_mse_IdentityReweighter": {
         "excess_return_without_cost": {
-            "mean": 0.000786103997989396,
-            "std": 0.01212668102481162,
-            "annualized_return": 0.18709275152147625,
-            "information_ratio": 1.0000610879243002,
-            "max_drawdown": -0.22286123014600412
+            "mean": 0.001197607951923925,
+            "std": 0.009206899440272816,
+            "annualized_return": 0.28503069255789415,
+            "information_ratio": 2.0067337266062775,
+            "max_drawdown": -0.20407163409653006
         },
         "excess_return_with_cost": {
-            "mean": 0.0006776970047285735,
-            "std": 0.012125609952763074,
-            "annualized_return": 0.1612918871254005,
-            "information_ratio": 0.8622246816508896,
-            "max_drawdown": -0.22286123014600412
+            "mean": 0.0003940441843585742,
+            "std": 0.009209094004998138,
+            "annualized_return": 0.09378251587734067,
+            "information_ratio": 0.660110277545098,
+            "max_drawdown": -0.27128510570457204
         }
     },
     "cn_csi300_open_CSRankNorm_mse_IdentityReweighter_neutralize": {
         "excess_return_without_cost": {
-            "mean": 0.0009877109097507601,
-            "std": 0.00933203864869276,
-            "annualized_return": 0.2350751965206809,
-            "information_ratio": 1.6328331186327352,
-            "max_drawdown": -0.13908970005903043
+            "mean": 0.0006756525716874494,
+            "std": 0.009632235346360487,
+            "annualized_return": 0.16080531206161297,
+            "information_ratio": 1.082143430856785,
+            "max_drawdown": -0.16759588819832472
         },
         "excess_return_with_cost": {
-            "mean": 0.0008994225399366073,
-            "std": 0.009332961699862564,
-            "annualized_return": 0.21406256450491254,
-            "information_ratio": 1.4867322490700137,
-            "max_drawdown": -0.13908970005903043
+            "mean": 0.00042628750012394727,
+            "std": 0.009630092040579704,
+            "annualized_return": 0.10145642502949945,
+            "information_ratio": 0.6829055444671921,
+            "max_drawdown": -0.19797375149421947
         }
     },
     "cn_csi300_open_CSZScoreNorm_mse_IdentityReweighter": {
         "excess_return_without_cost": {
-            "mean": 0.0007885947866965013,
-            "std": 0.009848128478800426,
-            "annualized_return": 0.1876855592337673,
-            "information_ratio": 1.235346173785064,
-            "max_drawdown": -0.13802739590123692
+            "mean": 0.0008012766231251826,
+            "std": 0.010924546573564078,
+            "annualized_return": 0.19070383630379345,
+            "information_ratio": 1.1315337982716165,
+            "max_drawdown": -0.17850254511840008
         },
         "excess_return_with_cost": {
-            "mean": 0.0006616795708763776,
-            "std": 0.00984365002726327,
-            "annualized_return": 0.15747973786857788,
-            "information_ratio": 1.0370030647951727,
-            "max_drawdown": -0.13802739590123692
+            "mean": 0.0005357262722123731,
+            "std": 0.010928104493606988,
+            "annualized_return": 0.1275028527865448,
+            "information_ratio": 0.7562869113130398,
+            "max_drawdown": -0.19108394637763948
         }
     },
     "cn_csi300_open_CSZScoreNorm_mse_IdentityReweighter_neutralize": {
         "excess_return_without_cost": {
-            "mean": 0.0010418936847937015,
-            "std": 0.011734618820407912,
-            "annualized_return": 0.24797069698090093,
-            "information_ratio": 1.3697550093004047,
-            "max_drawdown": -0.21394876249416495
+            "mean": 0.0010362484435967828,
+            "std": 0.010771067029140479,
+            "annualized_return": 0.2466271295760343,
+            "information_ratio": 1.484204148833754,
+            "max_drawdown": -0.20869383242799988
         },
         "excess_return_with_cost": {
-            "mean": 0.0009220279446053595,
-            "std": 0.01172559386621655,
-            "annualized_return": 0.21944265081607556,
-            "information_ratio": 1.2131031058048638,
-            "max_drawdown": -0.2139487624941645
+            "mean": 0.000731041219330564,
+            "std": 0.010768001408024546,
+            "annualized_return": 0.17398781020067422,
+            "information_ratio": 1.0473582065165643,
+            "max_drawdown": -0.30077589505822944
         }
     }
 }
