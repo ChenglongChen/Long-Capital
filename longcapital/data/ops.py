@@ -144,8 +144,14 @@ def Tsrank(series, N):
     return res
 
 
-def Decaylinear(series, N):
-    weights = np.arange(1, N + 1)[::-1]
+def Sma(series, n, m):
+    new_series = [0]*len(series)
+    for i in range(len(series)-1):
+        new_series[i+1] = (series[i]*m + new_series[i]*(n-m))/n
+    return pd.Series(new_series, series.index)
+
+
+def _wma(series, N, weights):
     sum_weights = weights.sum()
     res = series.rolling(N).apply(
         lambda x: np.sum(weights * x.values) / sum_weights
@@ -153,11 +159,14 @@ def Decaylinear(series, N):
     return res
 
 
-def Sma(series, n, m):
-    new_series = [0]*len(series)
-    for i in range(len(series)-1):
-        new_series[i+1] = (series[i]*m + new_series[i]*(n-m))/n
-    return pd.Series(new_series, series.index)
+def Wma(series, N, decay=0.9):
+    weights = decay ** np.arange(0, N)[::-1]
+    return _wma(series, N, weights)
+
+
+def Decaylinear(series, N):
+    weights = np.arange(1, N + 1)[::-1]
+    return _wma(series, N, weights)
 
 
 def Sequence(n):

@@ -260,6 +260,49 @@ class GTJAAlpha25(AlphaProcessor):
         return self.register_alpha(df, res)
 
 
+class GTJAAlpha26(AlphaProcessor):
+    """((((SUM(CLOSE, 7) / 7) - CLOSE)) + ((CORR(VWAP, DELAY(CLOSE, 5), 230))))"""
+    def __call__(self, df):
+        res = ((((Sum(Ref(df, "close"), 7) / 7) - Ref(df, "close"))) + ((Corr(Ref(df, "vwap"), Delay(Ref(df, "close"), 5), 230))))
+        return self.register_alpha(df, res)
+
+
+class GTJAAlpha27(AlphaProcessor):
+    """WMA((CLOSE-DELAY(CLOSE,3))/DELAY(CLOSE,3)*100+(CLOSE-DELAY(CLOSE,6))/DELAY(CLOSE,6)*100,12)"""
+    def __call__(self, df):
+        res = Wma((Ref(df, "close")-Delay(Ref(df, "close"),3))/Delay(Ref(df, "close"),3)*100+(Ref(df, "close")-Delay(Ref(df, "close"),6))/Delay(Ref(df, "close"),6)*100,12)
+        return self.register_alpha(df, res)
+
+
+class GTJAAlpha28(AlphaProcessor):
+    """3*SMA((CLOSE-TSMIN(LOW,9))/(TSMAX(HIGH,9)-TSMIN(LOW,9))*100,3,1)-2*SMA(SMA((CLOSE-TSMIN(LOW,9))/(
+    MAX(HIGH,9)-TSMAX(LOW,9))*100,3,1),3,1)"""
+    def __call__(self, df):
+        res = 3*Sma((Ref(df, "close")-Min(Ref(df, "low"),9))/(Max(Ref(df, "high"),9)-Min(Ref(df, "low"),9))*100,3,1)-2*Sma(Sma((Ref(df, "close")-Min(Ref(df, "low"),9))/(Max(Ref(df, "high"),9)-Max(Ref(df, "low"),9))*100,3,1),3,1)
+        return self.register_alpha(df, res)
+
+
+class GTJAAlpha29(AlphaProcessor):
+    """(CLOSE-DELAY(CLOSE,6))/DELAY(CLOSE,6)*VOLUME"""
+    def __call__(self, df):
+        res = (Ref(df, "close")-Delay(Ref(df, "close"),6))/Delay(Ref(df, "close"),6)*Ref(df, "volume")
+        return self.register_alpha(df, res)
+
+
+# class GTJAAlpha30(AlphaProcessor):
+#     """WMA((REGRESI(CLOSE/DELAY(CLOSE)-1,MKT,SMB,HML，60))^2,20)"""
+#     def __call__(self, df):
+#         res = WMA((REGRESI(CLOSE/DELAY(CLOSE)-1,MKT,SMB,HML，60))^2,20)
+#         return self.register_alpha(df, res)
+
+
+class GTJAAlpha31(AlphaProcessor):
+    """(CLOSE-MEAN(CLOSE,12))/MEAN(CLOSE,12)*100"""
+    def __call__(self, df):
+        res = (Ref(df, "close")-Mean(Ref(df, "close"),12))/Mean(Ref(df, "close"),12)*100
+        return self.register_alpha(df, res)
+
+
 class GTJAAlpha32(AlphaProcessor):
     """(-1 * SUM(RANK(CORR(RANK(HIGH), RANK(VOLUME), 3)), 3))"""
 
@@ -430,7 +473,7 @@ class GTJAAlpha87(AlphaProcessor):
 class GTJAAlpha90(AlphaProcessor):
     """( RANK(CORR(RANK(VWAP), RANK(VOLUME), 5)) * -1)"""
     def __call__(self, df):
-        res = ( Rank(Corr(Rank(Ref(df,"vwap")), Rank(Ref(df,"volume")), 5)) * -1)
+        res = (Rank(Corr(Rank(Ref(df,"vwap")), Rank(Ref(df,"volume")), 5)) * -1)
         return self.register_alpha(df, res)
 
 

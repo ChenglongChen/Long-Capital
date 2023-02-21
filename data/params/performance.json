@@ -49,18 +49,18 @@
     },
     "cn_csi300_open_CSZScoreNorm_mse_IdentityReweighter_neutralize": {
         "excess_return_without_cost": {
-            "mean": 0.0010362484435967828,
-            "std": 0.010771067029140479,
-            "annualized_return": 0.2466271295760343,
-            "information_ratio": 1.484204148833754,
-            "max_drawdown": -0.20869383242799988
+            "mean": 0.0010466811314985584,
+            "std": 0.010770749445608947,
+            "annualized_return": 0.2491101092966569,
+            "information_ratio": 1.4991909452170007,
+            "max_drawdown": -0.20869383242799922
         },
         "excess_return_with_cost": {
-            "mean": 0.000731041219330564,
-            "std": 0.010768001408024546,
-            "annualized_return": 0.17398781020067422,
-            "information_ratio": 1.0473582065165643,
-            "max_drawdown": -0.30077589505822944
+            "mean": 0.0007415940539621942,
+            "std": 0.010767804109767033,
+            "annualized_return": 0.17649938484300223,
+            "information_ratio": 1.0624966547833656,
+            "max_drawdown": -0.30077589505822977
         }
     }
 }
