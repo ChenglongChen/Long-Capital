@@ -1,7 +1,7 @@
 {
     "cn_csi300_open_CSRankNorm_mse_IdentityReweighter": {
-        "topk": 8,
-        "n_drop": 2
+        "topk": 10,
+        "n_drop": 3
     },
     "cn_csi300_open_CSRankNorm_mse_IdentityReweighter_neutralize": {
         "topk": 8,
@@ -9,7 +9,7 @@
     },
     "cn_csi300_open_CSZScoreNorm_mse_IdentityReweighter": {
         "topk": 10,
-        "n_drop": 3
+        "n_drop": 4
     },
     "cn_csi300_open_CSZScoreNorm_mse_IdentityReweighter_neutralize": {
         "topk": 50,

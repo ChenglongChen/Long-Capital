@@ -88,7 +88,7 @@ def get_date_config(region=REG_CN, pred_date=None):
     DATE_CONFIG = {
         REG_CN: {
             "train": {
-                "start": "2008-01-01",
+                "start": "2006-01-01",
                 "end": "2016-12-31"
             },
             "valid": {
@@ -106,7 +106,7 @@ def get_date_config(region=REG_CN, pred_date=None):
         },
         REG_US: {
             "train": {
-                "start": "2008-01-01",
+                "start": "2006-01-01",
                 "end": "2016-12-31"
             },
             "valid": {

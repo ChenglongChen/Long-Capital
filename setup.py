@@ -6,7 +6,7 @@ with open("README.md", mode="r", encoding="utf-8") as readme_file:
 __version__ = "0.0.1"
 
 setup(
-    name="longcatipcal",
+    name="longcapital",
     version=__version__,
     author="Chenglong Chen",
     author_email="c.chenglong@gmail.com",
