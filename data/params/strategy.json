@@ -1,18 +1,6 @@
 {
-    "cn_csi300_open_CSRankNorm_mse_IdentityReweighter": {
-        "topk": 10,
-        "n_drop": 3
-    },
-    "cn_csi300_open_CSRankNorm_mse_IdentityReweighter_neutralize": {
-        "topk": 8,
-        "n_drop": 1
-    },
-    "cn_csi300_open_CSZScoreNorm_mse_IdentityReweighter": {
-        "topk": 10,
-        "n_drop": 5
-    },
-    "cn_csi300_open_CSZScoreNorm_mse_IdentityReweighter_neutralize": {
-        "topk": 50,
-        "n_drop": 50
+    "cn_csi300_open_day4_hold2_CSZScoreNorm_mse": {
+        "topk": 35,
+        "n_drop": 9
     }
 }
