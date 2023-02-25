@@ -14,11 +14,17 @@ PERFORMANCE_FILE = "../data/params/performance.json"
 REPORT_DF_FOLDER = "../data/report_df"
 
 # model
-MODEL_LOSS_KEY_DICT = {
+MODEL_VALID_LOSS_KEY_DICT = {
     "mse": "l2",
     "mse_log": "l2",
     "binary": "binary_logloss",
     "lambdarank": "ndcg@5",
+}
+MODEL_LOSS_NAME_DICT = {
+    "mse": "mse",
+    "mse_log": "mse",
+    "binary": "binary",
+    "lambdarank": "lambdarank"
 }
 
 # market setting for trading
