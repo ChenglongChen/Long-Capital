@@ -33,18 +33,18 @@
     },
     "cn_csi300_open_CSZScoreNorm_mse_IdentityReweighter": {
         "excess_return_without_cost": {
-            "mean": 0.0016319164428162203,
-            "std": 0.009563379593433025,
-            "annualized_return": 0.3883961133902604,
-            "information_ratio": 2.632540143921859,
-            "max_drawdown": -0.09068452661563242
+            "mean": 0.0016466148312962985,
+            "std": 0.009754165848529648,
+            "annualized_return": 0.3918943298485191,
+            "information_ratio": 2.60429613143273,
+            "max_drawdown": -0.11122724217106539
         },
         "excess_return_with_cost": {
-            "mean": 0.0008124964587127172,
-            "std": 0.009565672157545894,
-            "annualized_return": 0.19337415717362672,
-            "information_ratio": 1.3103715729984229,
-            "max_drawdown": -0.13605229867254498
+            "mean": 0.0009728853257061748,
+            "std": 0.009755037814241247,
+            "annualized_return": 0.23154670751806958,
+            "information_ratio": 1.5385838665878169,
+            "max_drawdown": -0.144682688927944
         }
     },
     "cn_csi300_open_CSZScoreNorm_mse_IdentityReweighter_neutralize": {
