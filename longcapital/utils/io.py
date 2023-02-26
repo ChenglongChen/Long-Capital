@@ -4,18 +4,26 @@ import os
 from pandas import ExcelWriter
 
 
-def get_params_from_file(file, key):
+def get_params_from_file(file, key, sub_key=None):
     if not os.path.exists(file):
         return None
     with open(file, "r") as f:
         params = json.load(f)
-    return params.get(key)
+    if sub_key:
+        return params.get(key, {}).get(sub_key)
+    else:
+        return params.get(key)
 
 
-def update_params_to_file(file, key, value):
+def update_params_to_file(file, key, value, sub_key=None):
     with open(file, "r") as f:
         params = json.load(f)
-    params[key] = value
+    if sub_key:
+        if key not in params:
+            params[key] = {}
+        params[key][sub_key] = value
+    else:
+        params[key] = value
     with open(file, "w") as f:
         json.dump(params, f, indent=4)
 

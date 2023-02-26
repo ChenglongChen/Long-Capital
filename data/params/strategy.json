@@ -1,6 +1,146 @@
 {
-    "cn_csi300_open_day4_hold2_CSZScoreNorm_mse": {
-        "topk": 35,
-        "n_drop": 9
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=2-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "topk": 8,
+        "n_drop": 2
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=2-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "topk": 10,
+        "n_drop": 5
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=2-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "topk": 10,
+        "n_drop": 3
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=2-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "topk": 4,
+        "n_drop": 3
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=2-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "topk": 6,
+        "n_drop": 5
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=2-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "topk": 10,
+        "n_drop": 1
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=3-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "topk": 8,
+        "n_drop": 5
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=3-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "topk": 10,
+        "n_drop": 2
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=3-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "topk": 10,
+        "n_drop": 3
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=3-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "topk": 10,
+        "n_drop": 5
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=3-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "topk": 10,
+        "n_drop": 3
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=3-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "topk": 10,
+        "n_drop": 2
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=4-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "topk": 10,
+        "n_drop": 4
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=4-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "topk": 10,
+        "n_drop": 5
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=4-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "topk": 10,
+        "n_drop": 5
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=4-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "topk": 10,
+        "n_drop": 5
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=4-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "topk": 8,
+        "n_drop": 1
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=4-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "topk": 10,
+        "n_drop": 4
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=5-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "topk": 10,
+        "n_drop": 3
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=5-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "topk": 10,
+        "n_drop": 5
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=5-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "topk": 10,
+        "n_drop": 5
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=5-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "topk": 1,
+        "n_drop": 1
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=5-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "topk": 8,
+        "n_drop": 1
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=5-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "topk": 2,
+        "n_drop": 2
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=6-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "topk": 10,
+        "n_drop": 1
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=6-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "topk": 8,
+        "n_drop": 1
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=6-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "topk": 8,
+        "n_drop": 1
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=6-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "topk": 8,
+        "n_drop": 2
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=6-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "topk": 10,
+        "n_drop": 1
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=6-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "topk": 10,
+        "n_drop": 2
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=7-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "topk": 6,
+        "n_drop": 4
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=7-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "topk": 10,
+        "n_drop": 5
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=7-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "topk": 8,
+        "n_drop": 5
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=7-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "topk": 4,
+        "n_drop": 3
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=7-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "topk": 10,
+        "n_drop": 2
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=7-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "topk": 10,
+        "n_drop": 5
     }
 }
