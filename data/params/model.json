@@ -294,5 +294,341 @@
         "learning_rate": 0.2,
         "num_leaves": 210,
         "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=8-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=8-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=8-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=8-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=8-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=8-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=9-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=9-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=9-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=9-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=9-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=9-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=10-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=10-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=10-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=10-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=10-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=10-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=11-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=11-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=11-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=11-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=11-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=11-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=12-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=12-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=12-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=12-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=12-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=12-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=13-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=13-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=13-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=13-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=13-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=13-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=14-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=14-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=14-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=14-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=14-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=14-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "colsample_bytree": 0.8879,
+        "lambda_l1": 205.6999,
+        "lambda_l2": 580.9768,
+        "learning_rate": 0.2,
+        "num_leaves": 210,
+        "subsample": 0.8789
     }
 }

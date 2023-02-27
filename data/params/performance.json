@@ -481,18 +481,18 @@
     },
     "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=7-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
         "excess_return_without_cost": {
-            "mean": 0.0023262418391741943,
-            "std": 0.011459676043805338,
-            "annualized_return": 0.5536455577234582,
-            "information_ratio": 3.131634006691267,
-            "max_drawdown": -0.14325095322005088
+            "mean": 0.0023163759386057763,
+            "std": 0.011458246995855495,
+            "annualized_return": 0.5512974733881748,
+            "information_ratio": 3.118741245186733,
+            "max_drawdown": -0.14325095322005132
         },
         "excess_return_with_cost": {
-            "mean": 0.0012121748816809543,
-            "std": 0.011462382113394653,
-            "annualized_return": 0.2884976218400671,
-            "information_ratio": 1.6314691908076078,
-            "max_drawdown": -0.2013659769656807
+            "mean": 0.0012026899818025072,
+            "std": 0.011460627132845716,
+            "annualized_return": 0.2862402156689967,
+            "information_ratio": 1.6189513145861112,
+            "max_drawdown": -0.20136597696568098
         }
     },
     "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=7-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
@@ -573,6 +573,678 @@
             "annualized_return": 0.1496267968742685,
             "information_ratio": 1.021269623304751,
             "max_drawdown": -0.17087894725673558
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=8-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "excess_return_without_cost": {
+            "mean": 0.0009987716727712212,
+            "std": 0.009452496391956567,
+            "annualized_return": 0.23770765811955064,
+            "information_ratio": 1.6300772062824775,
+            "max_drawdown": -0.14970618292583338
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0004590138764036508,
+            "std": 0.009455269093778454,
+            "annualized_return": 0.10924530258406889,
+            "information_ratio": 0.7489285731928166,
+            "max_drawdown": -0.20521837259675957
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=8-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "excess_return_without_cost": {
+            "mean": 0.0009388832410461257,
+            "std": 0.00905968456063366,
+            "annualized_return": 0.22345421136897792,
+            "information_ratio": 1.598773675654918,
+            "max_drawdown": -0.11112477364326856
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0004864857321140325,
+            "std": 0.009064763187081631,
+            "annualized_return": 0.11578360424313974,
+            "information_ratio": 0.8279462115860953,
+            "max_drawdown": -0.1613090320338933
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=8-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "excess_return_without_cost": {
+            "mean": 0.0006690083463560006,
+            "std": 0.009055771274370756,
+            "annualized_return": 0.15922398643272814,
+            "information_ratio": 1.1397105531652825,
+            "max_drawdown": -0.13691564652817262
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0004731489631929938,
+            "std": 0.00906151361564443,
+            "annualized_return": 0.11260945323993252,
+            "information_ratio": 0.8055372423794177,
+            "max_drawdown": -0.1416526964180201
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=8-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "excess_return_without_cost": {
+            "mean": 0.0009310605065949109,
+            "std": 0.00916392232364271,
+            "annualized_return": 0.2215924005695888,
+            "information_ratio": 1.567418558202856,
+            "max_drawdown": -0.11273457409760668
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0005894597251396792,
+            "std": 0.009179356699000359,
+            "annualized_return": 0.14029141458324365,
+            "information_ratio": 0.9906730972243635,
+            "max_drawdown": -0.14116495149228853
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=8-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "excess_return_without_cost": {
+            "mean": 0.001060175476285148,
+            "std": 0.010127646564504402,
+            "annualized_return": 0.25232176335586526,
+            "information_ratio": 1.6149448492185168,
+            "max_drawdown": -0.12280813593575046
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0007860106631608246,
+            "std": 0.01012665107558615,
+            "annualized_return": 0.18707053783227626,
+            "information_ratio": 1.1974325794845138,
+            "max_drawdown": -0.14215067031292694
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=8-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "excess_return_without_cost": {
+            "mean": 0.0006085241944799545,
+            "std": 0.00957862067823496,
+            "annualized_return": 0.14482875828622918,
+            "information_ratio": 0.9800841222566192,
+            "max_drawdown": -0.17604463397241193
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0004722065917638207,
+            "std": 0.009582290610095351,
+            "annualized_return": 0.11238516883978933,
+            "information_ratio": 0.7602408221395534,
+            "max_drawdown": -0.20526735191337908
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=9-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "excess_return_without_cost": {
+            "mean": 0.0008850270857596194,
+            "std": 0.009404487207634978,
+            "annualized_return": 0.2106364464107894,
+            "information_ratio": 1.4518104588246366,
+            "max_drawdown": -0.166002443642002
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0006706762693145909,
+            "std": 0.009405181594478555,
+            "annualized_return": 0.15962095209687263,
+            "information_ratio": 1.10010523950836,
+            "max_drawdown": -0.1817577484238484
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=9-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "excess_return_without_cost": {
+            "mean": 0.0012565923769202758,
+            "std": 0.00931020836235259,
+            "annualized_return": 0.2990689857070256,
+            "information_ratio": 2.0822050655510496,
+            "max_drawdown": -0.17184364502630778
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0006778315551159626,
+            "std": 0.009313425306048326,
+            "annualized_return": 0.16132391011759908,
+            "information_ratio": 1.1227959187938303,
+            "max_drawdown": -0.21720030467704038
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=9-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "excess_return_without_cost": {
+            "mean": 0.002905850844335775,
+            "std": 0.024000612257411413,
+            "annualized_return": 0.6915925009519145,
+            "information_ratio": 1.867839159642069,
+            "max_drawdown": -0.24465163024575076
+        },
+        "excess_return_with_cost": {
+            "mean": 0.002392674971429638,
+            "std": 0.024013309634972113,
+            "annualized_return": 0.5694566432002539,
+            "information_ratio": 1.5371638567735877,
+            "max_drawdown": -0.2781975775749758
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=9-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "excess_return_without_cost": {
+            "mean": 0.0009805307782348237,
+            "std": 0.009021461958299504,
+            "annualized_return": 0.23336632521988804,
+            "information_ratio": 1.6767672651997765,
+            "max_drawdown": -0.14315135081984898
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0007396399187142265,
+            "std": 0.009023634916798777,
+            "annualized_return": 0.1760343006539859,
+            "information_ratio": 1.264524664494019,
+            "max_drawdown": -0.15200589824045252
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=9-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "excess_return_without_cost": {
+            "mean": 0.0008188444974901588,
+            "std": 0.009119213264067465,
+            "annualized_return": 0.19488499040265778,
+            "information_ratio": 1.3852639782117067,
+            "max_drawdown": -0.15828397612239542
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0006709252871365341,
+            "std": 0.009118252091831201,
+            "annualized_return": 0.15968021833849513,
+            "information_ratio": 1.1351442256939002,
+            "max_drawdown": -0.16919435471211197
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=9-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "excess_return_without_cost": {
+            "mean": 0.0017265932226060582,
+            "std": 0.02385197865359624,
+            "annualized_return": 0.41092918698024183,
+            "information_ratio": 1.1167452100528168,
+            "max_drawdown": -0.616540499835347
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0014631178732121566,
+            "std": 0.02384116407957579,
+            "annualized_return": 0.3482220538244933,
+            "information_ratio": 0.946760951598782,
+            "max_drawdown": -0.6771011807387695
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=10-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "excess_return_without_cost": {
+            "mean": 0.001083964932488407,
+            "std": 0.008794730593065661,
+            "annualized_return": 0.2579836539322409,
+            "information_ratio": 1.9014336292043255,
+            "max_drawdown": -0.14117378222165722
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0004693850063128106,
+            "std": 0.008796581442600942,
+            "annualized_return": 0.11171363150244892,
+            "information_ratio": 0.8231969701403786,
+            "max_drawdown": -0.18734020605491628
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=10-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "excess_return_without_cost": {
+            "mean": 0.0012315878911020115,
+            "std": 0.008967546906086329,
+            "annualized_return": 0.29311791808227877,
+            "information_ratio": 2.1187525187276925,
+            "max_drawdown": -0.12376346421484108
+        },
+        "excess_return_with_cost": {
+            "mean": 0.000677023959099862,
+            "std": 0.008970783352328343,
+            "annualized_return": 0.16113170226576717,
+            "information_ratio": 1.1642926296270466,
+            "max_drawdown": -0.1566297473667444
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=10-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "excess_return_without_cost": {
+            "mean": 0.0007924407542659744,
+            "std": 0.008917783858308716,
+            "annualized_return": 0.1886008995153019,
+            "information_ratio": 1.370876523512106,
+            "max_drawdown": -0.14256726782370244
+        },
+        "excess_return_with_cost": {
+            "mean": 0.000614915874447366,
+            "std": 0.00892034062709788,
+            "annualized_return": 0.1463499781184731,
+            "information_ratio": 1.0634638824216633,
+            "max_drawdown": -0.15305389161050134
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=10-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "excess_return_without_cost": {
+            "mean": 0.0008138844811513077,
+            "std": 0.009156853366487687,
+            "annualized_return": 0.19370450651401122,
+            "information_ratio": 1.3712132035524542,
+            "max_drawdown": -0.1263097925081377
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0006538815070605551,
+            "std": 0.009159116462672591,
+            "annualized_return": 0.15562379868041212,
+            "information_ratio": 1.101371799224184,
+            "max_drawdown": -0.13624776742173383
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=10-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "excess_return_without_cost": {
+            "mean": 0.0010982017136055302,
+            "std": 0.00971026838231667,
+            "annualized_return": 0.2613720078381162,
+            "information_ratio": 1.7447747275606373,
+            "max_drawdown": -0.1967886569351468
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0008198944064348467,
+            "std": 0.009717526095358536,
+            "annualized_return": 0.1951348687314935,
+            "information_ratio": 1.301639401483388,
+            "max_drawdown": -0.22191384385312818
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=10-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "excess_return_without_cost": {
+            "mean": 0.0008434971601621316,
+            "std": 0.008894001436098802,
+            "annualized_return": 0.20075232411858732,
+            "information_ratio": 1.463103024441357,
+            "max_drawdown": -0.14929995278496783
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0006149910094207479,
+            "std": 0.008907194201076156,
+            "annualized_return": 0.146367860242138,
+            "information_ratio": 1.0651636180319703,
+            "max_drawdown": -0.1688613259048758
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=11-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "excess_return_without_cost": {
+            "mean": 0.0006294418671554006,
+            "std": 0.008572215297759627,
+            "annualized_return": 0.14980716438298533,
+            "information_ratio": 1.1327942474009152,
+            "max_drawdown": -0.2065061672793483
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0004060748721079441,
+            "std": 0.008571805579293303,
+            "annualized_return": 0.0966458195616907,
+            "information_ratio": 0.7308399557844771,
+            "max_drawdown": -0.22671376803661666
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=11-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "excess_return_without_cost": {
+            "mean": 0.000698475515651644,
+            "std": 0.009875855805169432,
+            "annualized_return": 0.16623717272509128,
+            "information_ratio": 1.0911009281523203,
+            "max_drawdown": -0.20768170656567878
+        },
+        "excess_return_with_cost": {
+            "mean": 0.00043477459144120615,
+            "std": 0.009878614268873705,
+            "annualized_return": 0.10347635276300707,
+            "information_ratio": 0.6789794128506424,
+            "max_drawdown": -0.23123218452030742
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=11-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "excess_return_without_cost": {
+            "mean": 0.000762316260412865,
+            "std": 0.009409170334418427,
+            "annualized_return": 0.18143126997826187,
+            "information_ratio": 1.2498915482326252,
+            "max_drawdown": -0.15584018153219253
+        },
+        "excess_return_with_cost": {
+            "mean": 0.00037294844351402483,
+            "std": 0.009406066022227455,
+            "annualized_return": 0.0887617295563379,
+            "information_ratio": 0.6116870057193515,
+            "max_drawdown": -0.19186126794498137
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=11-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "excess_return_without_cost": {
+            "mean": 0.0005291070916920007,
+            "std": 0.00879564227220023,
+            "annualized_return": 0.12592748782269617,
+            "information_ratio": 0.9280353154224242,
+            "max_drawdown": -0.17720784048963278
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0003701936820817827,
+            "std": 0.0087988169821375,
+            "annualized_return": 0.08810609633546429,
+            "information_ratio": 0.6490724813146383,
+            "max_drawdown": -0.2059215986134716
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=11-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "excess_return_without_cost": {
+            "mean": 0.0006852131262514691,
+            "std": 0.008845409799790515,
+            "annualized_return": 0.16308072404784965,
+            "information_ratio": 1.1950778421809538,
+            "max_drawdown": -0.16818023850546282
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0005437507178669327,
+            "std": 0.008846856671215424,
+            "annualized_return": 0.12941267085233,
+            "information_ratio": 0.9481986454493596,
+            "max_drawdown": -0.17589712796354584
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=11-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "excess_return_without_cost": {
+            "mean": 0.0008829748919433836,
+            "std": 0.00935996368836772,
+            "annualized_return": 0.2101480242825253,
+            "information_ratio": 1.4553339774848923,
+            "max_drawdown": -0.12832709234477896
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0007486836775442597,
+            "std": 0.009356849968547262,
+            "annualized_return": 0.1781867152555338,
+            "information_ratio": 1.2344035942055287,
+            "max_drawdown": -0.13466502560065613
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=12-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "excess_return_without_cost": {
+            "mean": 0.0008720485715461267,
+            "std": 0.009754878413235954,
+            "annualized_return": 0.20754756002797814,
+            "information_ratio": 1.3791366281076338,
+            "max_drawdown": -0.20228761864151207
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0005882445841534004,
+            "std": 0.009754770697303267,
+            "annualized_return": 0.1400022110285093,
+            "information_ratio": 0.9303135594904726,
+            "max_drawdown": -0.2293617565865646
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=12-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "excess_return_without_cost": {
+            "mean": 0.0011544920773537142,
+            "std": 0.008997275692873312,
+            "annualized_return": 0.274769114410184,
+            "information_ratio": 1.9795588037708893,
+            "max_drawdown": -0.18129246386345543
+        },
+        "excess_return_with_cost": {
+            "mean": 0.000685088104328711,
+            "std": 0.009000984626284413,
+            "annualized_return": 0.1630509688302332,
+            "information_ratio": 1.1742075951992128,
+            "max_drawdown": -0.21835100834428967
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=12-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "excess_return_without_cost": {
+            "mean": 0.0008319209349958086,
+            "std": 0.00860124063966684,
+            "annualized_return": 0.19799718252900245,
+            "information_ratio": 1.492139522015607,
+            "max_drawdown": -0.20718869550954366
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0005473994927514356,
+            "std": 0.008597457743983291,
+            "annualized_return": 0.13028107927484167,
+            "information_ratio": 0.9822517680118442,
+            "max_drawdown": -0.2333765280209684
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=12-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "excess_return_without_cost": {
+            "mean": 0.0008723602358765456,
+            "std": 0.008626189126386637,
+            "annualized_return": 0.20762173613861784,
+            "information_ratio": 1.5601464387529702,
+            "max_drawdown": -0.21510620746295367
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0006346442369108837,
+            "std": 0.00862398740263992,
+            "annualized_return": 0.15104532838479032,
+            "information_ratio": 1.1353001774354343,
+            "max_drawdown": -0.23603276535820056
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=12-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "excess_return_without_cost": {
+            "mean": 0.0009314114158444703,
+            "std": 0.009335686494246936,
+            "annualized_return": 0.22167591697098393,
+            "information_ratio": 1.539160027395747,
+            "max_drawdown": -0.2160764191514003
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0007752410761014992,
+            "std": 0.009335702407153227,
+            "annualized_return": 0.1845073761121568,
+            "information_ratio": 1.281085910869446,
+            "max_drawdown": -0.22847080018844357
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=12-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "excess_return_without_cost": {
+            "mean": 0.0009361405055502508,
+            "std": 0.009244812099116673,
+            "annualized_return": 0.2228014403209597,
+            "information_ratio": 1.5621812718360233,
+            "max_drawdown": -0.19132367175796283
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0008040163577017159,
+            "std": 0.00924532025230849,
+            "annualized_return": 0.19135589313300838,
+            "information_ratio": 1.3416258070832623,
+            "max_drawdown": -0.20117201928466916
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=13-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "excess_return_without_cost": {
+            "mean": 0.0009253920411172919,
+            "std": 0.008719916498999808,
+            "annualized_return": 0.22024330578591547,
+            "information_ratio": 1.6372006648715443,
+            "max_drawdown": -0.2000370674772698
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0005078090383330386,
+            "std": 0.008721205823168718,
+            "annualized_return": 0.12085855112326319,
+            "information_ratio": 0.898281320836375,
+            "max_drawdown": -0.2717305093222085
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=13-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "excess_return_without_cost": {
+            "mean": 0.000924716441883031,
+            "std": 0.008721895338398435,
+            "annualized_return": 0.22008251316816138,
+            "information_ratio": 1.635634216983349,
+            "max_drawdown": -0.24516945183868832
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0004816955804217949,
+            "std": 0.008718753075852044,
+            "annualized_return": 0.11464354814038719,
+            "information_ratio": 0.8523280122664625,
+            "max_drawdown": -0.3213942740081295
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=13-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "excess_return_without_cost": {
+            "mean": 0.0010839682474467764,
+            "std": 0.00907217336460101,
+            "annualized_return": 0.2579844428923328,
+            "information_ratio": 1.8432901332534817,
+            "max_drawdown": -0.11583826338810993
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0006755768187754952,
+            "std": 0.009081018895667757,
+            "annualized_return": 0.16078728286856786,
+            "information_ratio": 1.1477006782241364,
+            "max_drawdown": -0.15871439675980747
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=13-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "excess_return_without_cost": {
+            "mean": 0.0009586968403797604,
+            "std": 0.009588026865536404,
+            "annualized_return": 0.22816984801038298,
+            "information_ratio": 1.5425545543085766,
+            "max_drawdown": -0.15318966244559495
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0006528779369372211,
+            "std": 0.009584589812442649,
+            "annualized_return": 0.15538494899105862,
+            "information_ratio": 1.050865029082537,
+            "max_drawdown": -0.19597608408273476
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=13-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "excess_return_without_cost": {
+            "mean": 0.0010547267361732116,
+            "std": 0.010928722713071236,
+            "annualized_return": 0.25102496320922435,
+            "information_ratio": 1.4888777044562544,
+            "max_drawdown": -0.3441555309531811
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0008098305600455817,
+            "std": 0.010936189918985094,
+            "annualized_return": 0.19273967329084846,
+            "information_ratio": 1.1423957962404319,
+            "max_drawdown": -0.38498510565249333
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=13-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "excess_return_without_cost": {
+            "mean": 0.0008983938426458866,
+            "std": 0.009946320093566465,
+            "annualized_return": 0.213817734549721,
+            "information_ratio": 1.3934545680494015,
+            "max_drawdown": -0.1915741657443414
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0006926536177265637,
+            "std": 0.009947266775394531,
+            "annualized_return": 0.16485156101892215,
+            "information_ratio": 1.0742387642620952,
+            "max_drawdown": -0.20550428728512873
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=14-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=1": {
+        "excess_return_without_cost": {
+            "mean": 0.0009524395839715346,
+            "std": 0.008977126698975784,
+            "annualized_return": 0.22668062098522523,
+            "information_ratio": 1.6367734076483957,
+            "max_drawdown": -0.14757561407014208
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0007360908908955304,
+            "std": 0.008977391058007793,
+            "annualized_return": 0.17518963203313623,
+            "information_ratio": 1.2649395696126962,
+            "max_drawdown": -0.1724941432819148
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=14-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=2": {
+        "excess_return_without_cost": {
+            "mean": 0.0011071494756053298,
+            "std": 0.010847273290420322,
+            "annualized_return": 0.2635015751940685,
+            "information_ratio": 1.5746141691986206,
+            "max_drawdown": -0.1707882772959824
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0007858505801657459,
+            "std": 0.010851290193777527,
+            "annualized_return": 0.18703243807944753,
+            "information_ratio": 1.1172415502965496,
+            "max_drawdown": -0.2035292163545318
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=14-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=3": {
+        "excess_return_without_cost": {
+            "mean": 0.0008233740701268696,
+            "std": 0.009219682939348597,
+            "annualized_return": 0.19596302869019497,
+            "information_ratio": 1.3777476482777908,
+            "max_drawdown": -0.17765569332685172
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0006461530544747266,
+            "std": 0.009219068427385662,
+            "annualized_return": 0.15378442696498493,
+            "information_ratio": 1.0812766926311592,
+            "max_drawdown": -0.19307106612585556
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=14-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=4": {
+        "excess_return_without_cost": {
+            "mean": 0.0015711594904187747,
+            "std": 0.013678667050977839,
+            "annualized_return": 0.3739359587196684,
+            "information_ratio": 1.7720051223471378,
+            "max_drawdown": -0.5228744435784292
+        },
+        "excess_return_with_cost": {
+            "mean": 0.001281479146539943,
+            "std": 0.013699419825840069,
+            "annualized_return": 0.30499203687650644,
+            "information_ratio": 1.443104718815984,
+            "max_drawdown": -0.56485197731533
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=14-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=5": {
+        "excess_return_without_cost": {
+            "mean": 0.0011603143615810435,
+            "std": 0.009552879018130317,
+            "annualized_return": 0.27615481805628833,
+            "information_ratio": 1.8738286227767096,
+            "max_drawdown": -0.10071964462213412
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0008571580870024091,
+            "std": 0.009563400433447151,
+            "annualized_return": 0.20400362470657335,
+            "information_ratio": 1.3827289788102537,
+            "max_drawdown": -0.10977413188971574
+        }
+    },
+    "region=cn-instruments=csi300-benchmark_feature=None-deal_price=open-days_ahead=14-loss_type=mse-label_norm=CSZScoreNorm-model_type=default-strategy_type=best-hold_thresh=6": {
+        "excess_return_without_cost": {
+            "mean": 0.001069517395641531,
+            "std": 0.009334125584755805,
+            "annualized_return": 0.25454514016268437,
+            "information_ratio": 1.7676761059978408,
+            "max_drawdown": -0.11481146264370534
+        },
+        "excess_return_with_cost": {
+            "mean": 0.0008231530359497939,
+            "std": 0.0093346575436728,
+            "annualized_return": 0.19591042255605096,
+            "information_ratio": 1.3604126856221543,
+            "max_drawdown": -0.1451814750084387
         }
     }
 }
