@@ -7,4 +7,4 @@ def get_diff_date(d, diff, date_format="%Y-%m-%d"):
 
 
 def timestamp():
-    return datetime.datetime.now().strftime('%Y%m%d')
+    return datetime.datetime.now().strftime("%Y%m%d")
