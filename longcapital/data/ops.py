@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-
 from scipy import stats
 
 
@@ -145,17 +144,15 @@ def Tsrank(series, N):
 
 
 def Sma(series, n, m):
-    new_series = [0]*len(series)
-    for i in range(len(series)-1):
-        new_series[i+1] = (series[i]*m + new_series[i]*(n-m))/n
+    new_series = [0] * len(series)
+    for i in range(len(series) - 1):
+        new_series[i + 1] = (series[i] * m + new_series[i] * (n - m)) / n
     return pd.Series(new_series, series.index)
 
 
 def _wma(series, N, weights):
     sum_weights = weights.sum()
-    res = series.rolling(N).apply(
-        lambda x: np.sum(weights * x.values) / sum_weights
-    )
+    res = series.rolling(N).apply(lambda x: np.sum(weights * x.values) / sum_weights)
     return res
 
 
@@ -170,13 +167,14 @@ def Decaylinear(series, N):
 
 
 def Sequence(n):
-    return np.arange(1,n+1)
+    return np.arange(1, n + 1)
 
 
 def Regbeta(series, B, n):
     def _Regbeta(x, y):
         res = stats.linregress(x, y)
         return res.slope
+
     res = series.rolling(n).apply(lambda y: _Regbeta(B, y))
     return res
 
@@ -185,8 +183,9 @@ def Regresi(series, B, n):
     def _Regresi(x, y):
         res = stats.linregress(x, y)
         p = x * res.slope + res.intercept
-        resi = ((y - p)**2).mean()
+        resi = ((y - p) ** 2).mean()
         return resi
+
     res = series.rolling(n).apply(lambda y: _Regresi(B, y))
     return res
 
