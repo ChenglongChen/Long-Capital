@@ -12,9 +12,8 @@ from longcapital.rl.order_execution.interpreter import (
     WeightStrategyAction,
     WeightStrategyActionInterpreter,
 )
-from longcapital.rl.order_execution.policy.continuous.meta_td3 import MetaTD3
-from longcapital.rl.order_execution.policy.discrete.meta_ppo import MetaPPO
-from longcapital.rl.order_execution.policy.discrete.ppo import PPO
+from longcapital.rl.order_execution.policy.continuous.td3 import MetaTD3
+from longcapital.rl.order_execution.policy.discrete.ppo import PPO, MetaPPO
 from longcapital.rl.order_execution.state import TradeStrategyState
 from qlib.backtest.decision import TradeDecisionWO
 from qlib.backtest.position import Position
