@@ -75,3 +75,6 @@ class MetaTD3(TD3Policy):
 
         if weight_file is not None:
             set_weight(self, Trainer.get_policy_state_dict(weight_file))
+
+    def __str__(self):
+        return "MetaTD3"

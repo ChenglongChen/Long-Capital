@@ -12,8 +12,7 @@ from longcapital.rl.order_execution.interpreter import (
     WeightStrategyAction,
     WeightStrategyActionInterpreter,
 )
-from longcapital.rl.order_execution.policy.continuous.td3 import MetaTD3
-from longcapital.rl.order_execution.policy.discrete.ppo import PPO, MetaPPO
+from longcapital.rl.order_execution.policy import continuous, discrete
 from longcapital.rl.order_execution.state import TradeStrategyState
 from qlib.backtest.decision import TradeDecisionWO
 from qlib.backtest.position import Position
@@ -88,10 +87,11 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, TradeStrategy):
         topk,
         n_drop=None,
         checkpoint_path=None,
-        policy_cls=PPO,
+        policy_cls=discrete.PPO,
         **kwargs,
     ):
         super().__init__(topk=topk, n_drop=n_drop, **kwargs)
+        self.policy_cls = policy_cls
         self.n_drop_original = n_drop
         self.state_interpreter = TradeStrategyStateInterpreter(
             dim=dim, stock_num=stock_num
@@ -128,11 +128,12 @@ class TopkDropoutSignalStrategy(TopkDropoutStrategyBase, TradeStrategy):
         stock_num,
         topk,
         n_drop,
-        policy_cls=MetaTD3,
+        policy_cls=continuous.MetaTD3,
         checkpoint_path=None,
         **kwargs,
     ):
         super().__init__(topk=topk, n_drop=n_drop, **kwargs)
+        self.policy_cls = policy_cls
         self.state_interpreter = TradeStrategyStateInterpreter(
             dim=dim, stock_num=stock_num
         )
@@ -177,12 +178,13 @@ class WeightStrategy(WeightStrategyBase, TradeStrategy):
         stock_num,
         topk,
         checkpoint_path=None,
-        policy_cls=MetaTD3,
+        policy_cls=continuous.MetaTD3,
         verbose=False,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.verbose = verbose
+        self.policy_cls = policy_cls
 
         self.state_interpreter = TradeStrategyStateInterpreter(
             dim=dim, stock_num=stock_num
@@ -260,12 +262,13 @@ class TopkStrategy(WeightStrategy):
         dim,
         stock_num,
         checkpoint_path=None,
-        policy_cls=MetaPPO,
+        policy_cls=discrete.MetaPPO,
         verbose=False,
         **kwargs,
     ):
         super(WeightStrategy, self).__init__(**kwargs)
         self.verbose = verbose
+        self.policy_cls = policy_cls
 
         self.state_interpreter = TradeStrategyStateInterpreter(
             dim=dim, stock_num=stock_num

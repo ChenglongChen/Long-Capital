@@ -70,8 +70,8 @@ class TopkDropoutSignalStrategyActionInterpreter(
 ):
     def __init__(self, stock_num, baseline=False, **kwargs) -> None:
         self.stock_num = stock_num
-        self.shape = (stock_num,)
         self.baseline = baseline
+        self.shape = (stock_num,)
 
     @property
     def action_space(self) -> spaces.Box:

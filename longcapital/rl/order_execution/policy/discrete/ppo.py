@@ -70,6 +70,9 @@ class PPO(PPOPolicy):
         if weight_file is not None:
             set_weight(self, Trainer.get_policy_state_dict(weight_file))
 
+    def __str__(self):
+        return "PPO"
+
 
 class MetaPPO(PPOPolicy):
     def __init__(
@@ -166,3 +169,6 @@ class MetaPPO(PPOPolicy):
         else:
             act = dist.sample()
         return Batch(logits=logits, act=act, state=hidden, dist=dist)
+
+    def __str__(self):
+        return "MetaPPO"
