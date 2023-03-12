@@ -6,7 +6,6 @@ from longcapital.rl.order_execution.state import (
     TradeStrategyState,
 )
 from longcapital.rl.order_execution.utils import random_daterange
-from longcapital.utils.time import get_diff_date
 from qlib.backtest import create_account_instance, get_exchange
 from qlib.backtest.utils import CommonInfrastructure
 from qlib.rl.simulator import Simulator
@@ -45,7 +44,6 @@ class TradeStrategySimulator(
             )
         else:
             start_time, end_time = initial_state.start_time, initial_state.end_time
-        end_time = get_diff_date(end_time, -1)
         print(f"start_time: {start_time}, end_time: {end_time}")
 
         trade_account = create_account_instance(
@@ -94,10 +92,6 @@ class TradeStrategySimulator(
             trade_executor=self.trade_executor,
             trade_strategy=self.trade_strategy,
             feature=self.trade_strategy.get_feature(),
-            trade_start_time=self.trade_strategy.get_trade_start_end_time()[0],
-            trade_end_time=self.trade_strategy.get_trade_start_end_time()[1],
-            pred_start_time=self.trade_strategy.get_pred_start_end_time()[0],
-            pred_end_time=self.trade_strategy.get_pred_start_end_time()[1],
         )
 
     def done(self) -> bool:

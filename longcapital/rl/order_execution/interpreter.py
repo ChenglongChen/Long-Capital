@@ -14,7 +14,7 @@ from qlib.rl.interpreter import ActionInterpreter, StateInterpreter
 class TradeStrategyStateInterpreter(StateInterpreter[TradeStrategyState, np.ndarray]):
     def __init__(self, dim, stock_num=300):
         self.stock_num = stock_num
-        self.dim = dim + 1 + 1 + 1
+        self.dim = dim
         self.shape = (self.stock_num, self.dim)
         self.empty = np.zeros(self.shape, dtype=np.float32)
 
@@ -68,8 +68,11 @@ class TopkDropoutSignalStrategyAction(NamedTuple):
 class TopkDropoutSignalStrategyActionInterpreter(
     ActionInterpreter[TradeStrategyState, np.ndarray, TopkDropoutSignalStrategyAction]
 ):
-    def __init__(self, stock_num, baseline=False, **kwargs) -> None:
+    def __init__(
+        self, stock_num, signal_key="signal", baseline=False, **kwargs
+    ) -> None:
         self.stock_num = stock_num
+        self.signal_key = signal_key
         self.baseline = baseline
         self.shape = (stock_num,)
 
@@ -86,7 +89,7 @@ class TopkDropoutSignalStrategyActionInterpreter(
         if isinstance(action, torch.Tensor):
             action = action.squeeze().detach().numpy()
 
-        signal = state.feature[("feature", "signal")][: self.stock_num].copy()
+        signal = state.feature[("feature", self.signal_key)][: self.stock_num].copy()
         if not self.baseline:
             signal.loc[:] = action
 
@@ -101,11 +104,18 @@ class WeightStrategyActionInterpreter(
     ActionInterpreter[TradeStrategyState, np.ndarray, Dict]
 ):
     def __init__(
-        self, stock_num, topk=6, equal_weight=True, baseline=False, **kwargs
+        self,
+        stock_num,
+        topk=6,
+        equal_weight=True,
+        signal_key="signal",
+        baseline=False,
+        **kwargs,
     ) -> None:
         self.stock_num = stock_num
         self.topk = topk
         self.equal_weight = equal_weight
+        self.signal_key = signal_key
         self.baseline = baseline
         self.shape = (stock_num,)
 
@@ -124,7 +134,7 @@ class WeightStrategyActionInterpreter(
 
         # stocks & weights
         stocks = state.feature.index[: self.stock_num]
-        signal = state.feature[("feature", "signal")].values
+        signal = state.feature[("feature", self.signal_key)].values
         weights = signal if self.baseline else action
 
         # filter non-tradable stocks

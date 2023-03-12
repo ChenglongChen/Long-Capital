@@ -1,7 +1,6 @@
 from typing import NamedTuple
 
 import numpy as np
-import pandas as pd
 import torch.nn.functional as F  # noqa
 from qlib.strategy.base import BaseStrategy
 
@@ -15,10 +14,6 @@ class TradeStrategyState(NamedTuple):
     trade_executor: BaseExecutor
     trade_strategy: BaseStrategy
     feature: np.ndarray
-    trade_start_time: pd.Timestamp
-    trade_end_time: pd.Timestamp
-    pred_start_time: pd.Timestamp
-    pred_end_time: pd.Timestamp
 
 
 class TradeStrategyInitiateState(NamedTuple):

@@ -29,13 +29,17 @@ def softmax(x):
 # filter non-tradable stocks
 def filter_stock(state, stocks, weights):
     if len(stocks) and len(weights):
+        (
+            trade_start_time,
+            trade_end_time,
+        ) = state.trade_strategy.get_trade_start_end_time()
         tradable = [
             i
             for i, s in enumerate(stocks)
             if state.trade_strategy.trade_exchange.is_stock_tradable(
                 stock_id=s,
-                start_time=state.trade_start_time,
-                end_time=state.trade_end_time,
+                start_time=trade_start_time,
+                end_time=trade_end_time,
             )
         ]
         return stocks[tradable], weights[tradable]

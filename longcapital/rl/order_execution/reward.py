@@ -22,6 +22,9 @@ class ExcessReturnReward(Reward[TradeStrategyState]):
             )
         return reward * self.scale
 
+    def __str__(self):
+        return "ExcessReturnReward"
+
 
 class InformationRatioReward(Reward[TradeStrategyState]):
     def __init__(self, scale=1.0):
@@ -42,3 +45,6 @@ class InformationRatioReward(Reward[TradeStrategyState]):
             )
             reward = float(analysis.loc["information_ratio"])
         return reward * self.scale
+
+    def __str__(self):
+        return "InformationRatioReward"
