@@ -20,12 +20,11 @@ from qlib.backtest.decision import TradeDecisionWO
 from qlib.backtest.position import Position
 from qlib.contrib.strategy import TopkDropoutStrategy as TopkDropoutStrategyBase
 from qlib.contrib.strategy import WeightStrategyBase
-from qlib.contrib.strategy.signal_strategy import BaseSignalStrategy
 from qlib.utils.time import epsilon_change
 from tianshou.data import Batch
 
 
-class TradeStrategy(BaseSignalStrategy):
+class TradeStrategy:
     def action(
         self,
         pred_start_time: Optional[pd.Timestamp] = None,

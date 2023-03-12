@@ -16,8 +16,7 @@ class MetaSAC(SACPolicy):
         obs_space: gym.Space,
         action_space: gym.Space,
         hidden_sizes: List[int] = [32, 16, 8],
-        reward_normalization: bool = False,
-        n_step: int = 3,
+        n_step: int = 1,
         gamma: float = 0.99,
         tau: float = 0.005,
         actor_lr: float = 1e-3,
@@ -77,7 +76,6 @@ class MetaSAC(SACPolicy):
             tau=tau,
             gamma=gamma,
             alpha=alpha,
-            reward_normalization=reward_normalization,
             estimation_step=n_step,
             action_space=action_space,
         )

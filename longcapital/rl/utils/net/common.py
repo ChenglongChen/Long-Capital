@@ -116,7 +116,7 @@ class MetaNet(Net):
         self_attn=False,
         nhead=2,
         dim_feedforward=256,
-        num_layers=6,
+        num_layers=1,
         dropout=0.1,
     ) -> None:
         state_shape = (state_shape[-1],)
