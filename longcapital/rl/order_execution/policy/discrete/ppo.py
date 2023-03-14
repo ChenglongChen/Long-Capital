@@ -6,9 +6,10 @@ import numpy as np
 import torch
 from longcapital.rl.utils.net.common import MetaNet
 from longcapital.rl.utils.net.discrete import MetaActor, MetaCritic
-from qlib.rl.order_execution.policy import Trainer, auto_device, chain_dedup, set_weight
+from qlib.rl.order_execution.policy import Trainer, auto_device, set_weight
 from tianshou.data import Batch
 from tianshou.policy import PPOPolicy
+from tianshou.utils.net.common import ActorCritic
 from tianshou.utils.net.discrete import Actor, Critic
 
 
@@ -43,17 +44,13 @@ class PPO(PPOPolicy):
             attn_pooling=True,
         )
         critic = Critic(net, device=auto_device(net)).to(auto_device(net))
-
-        optimizer = torch.optim.Adam(
-            chain_dedup(actor.parameters(), critic.parameters()),
-            lr=lr,
-            weight_decay=weight_decay,
-        )
+        actor_critic = ActorCritic(actor, critic)
+        optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
         super().__init__(
             actor,
             critic,
-            optimizer,
+            optim,
             torch.distributions.Categorical,
             discount_factor=discount_factor,
             max_grad_norm=max_grad_norm,
@@ -113,17 +110,13 @@ class MetaPPO(PPOPolicy):
             attn_pooling=True,
         )
         critic = MetaCritic(net, device=auto_device(net)).to(auto_device(net))
-
-        optimizer = torch.optim.Adam(
-            chain_dedup(actor.parameters(), critic.parameters()),
-            lr=lr,
-            weight_decay=weight_decay,
-        )
+        actor_critic = ActorCritic(actor, critic)
+        optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
         super().__init__(
             actor,
             critic,
-            optimizer,
+            optim,
             torch.distributions.Bernoulli,
             discount_factor=discount_factor,
             max_grad_norm=max_grad_norm,

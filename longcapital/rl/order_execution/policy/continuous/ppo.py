@@ -5,8 +5,9 @@ import gym
 import torch
 from longcapital.rl.utils.net.common import MetaNet
 from longcapital.rl.utils.net.continuous import MetaActorProb, MetaCritic
-from qlib.rl.order_execution.policy import Trainer, auto_device, chain_dedup, set_weight
+from qlib.rl.order_execution.policy import Trainer, auto_device, set_weight
 from tianshou.policy import PPOPolicy
+from tianshou.utils.net.common import ActorCritic
 from torch.distributions import Independent, Normal
 
 
@@ -17,7 +18,6 @@ class MetaPPO(PPOPolicy):
         action_space: gym.Space,
         hidden_sizes: List[int] = [32, 16, 8],
         lr: float = 3e-4,
-        weight_decay: float = 0.0,
         discount_factor: float = 0.95,
         max_grad_norm: float = 0.5,
         reward_normalization: bool = True,
@@ -50,12 +50,8 @@ class MetaPPO(PPOPolicy):
             attn_pooling=True,
         )
         critic = MetaCritic(net, device=auto_device(net)).to(auto_device(net))
-
-        optimizer = torch.optim.Adam(
-            chain_dedup(actor.parameters(), critic.parameters()),
-            lr=lr,
-            weight_decay=weight_decay,
-        )
+        actor_critic = ActorCritic(actor, critic)
+        optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
         # replace DiagGuassian with Independent(Normal) which is equivalent
         # pass *logits to be consistent with policy.forward
@@ -65,7 +61,7 @@ class MetaPPO(PPOPolicy):
         super().__init__(
             actor,
             critic,
-            optimizer,
+            optim,
             dist,
             discount_factor=discount_factor,
             max_grad_norm=max_grad_norm,
