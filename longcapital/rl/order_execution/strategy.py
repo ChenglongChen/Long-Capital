@@ -6,6 +6,9 @@ import pandas as pd
 import torch.nn.functional as F  # noqa
 from longcapital.rl.order_execution.interpreter import (
     TopkActionInterpreter,
+    TopkDropoutDynamicStrategyAction,
+    TopkDropoutDynamicStrategyActionInterpreter,
+    TopkDropoutSelectionStrategyActionInterpreter,
     TopkDropoutSignalStrategyAction,
     TopkDropoutSignalStrategyActionInterpreter,
     TopkDropoutStrategyAction,
@@ -165,7 +168,9 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, TradeStrategy):
         self.state_interpreter = TradeStrategyStateInterpreter(
             dim=dim, stock_num=stock_num
         )
-        self.action_interpreter = TopkDropoutStrategyActionInterpreter(topk=topk)
+        self.action_interpreter = TopkDropoutStrategyActionInterpreter(
+            topk=topk, n_drop=n_drop
+        )
         self.baseline_action_interpreter = TopkDropoutStrategyActionInterpreter(
             topk=topk, n_drop=n_drop, baseline=True
         )
@@ -239,7 +244,7 @@ class TopkDropoutSignalStrategy(TopkDropoutStrategyBase, TradeStrategy):
     def get_pred_score(self):
         return self.pred_score
 
-    def set_pred_score(self, action: TopkDropoutSignalStrategyAction):
+    def prepare_trading_with_action(self, action: TopkDropoutSignalStrategyAction):
         self.pred_score = action.signal
 
     def generate_trade_decision(
@@ -252,13 +257,108 @@ class TopkDropoutSignalStrategy(TopkDropoutStrategyBase, TradeStrategy):
     ):
         if action is None:
             action = self.action()
-        self.set_pred_score(action)
+        self.prepare_trading_with_action(action)
         return super().generate_trade_decision(
             execute_result,
             trade_start_time=trade_start_time,
             trade_end_time=trade_end_time,
             return_decision=return_decision,
         )
+
+
+class TopkDropoutSelectionStrategy(TopkDropoutSignalStrategy):
+    def __init__(
+        self,
+        *,
+        dim,
+        stock_num,
+        topk,
+        n_drop,
+        signal_key="signal",
+        policy_cls=discrete.PPO,
+        checkpoint_path=None,
+        **kwargs,
+    ):
+        super(TopkDropoutSignalStrategy, self).__init__(
+            topk=topk, n_drop=n_drop, **kwargs
+        )
+        self.signal_key = signal_key
+        self.policy_cls = policy_cls
+        self.state_interpreter = TradeStrategyStateInterpreter(
+            dim=dim, stock_num=stock_num
+        )
+        self.action_interpreter = TopkDropoutSelectionStrategyActionInterpreter(
+            topk=topk, n_drop=n_drop, stock_num=stock_num, signal_key=signal_key
+        )
+        self.baseline_action_interpreter = (
+            TopkDropoutSelectionStrategyActionInterpreter(
+                topk=topk,
+                n_drop=n_drop,
+                stock_num=stock_num,
+                signal_key=signal_key,
+                baseline=True,
+            )
+        )
+        self.policy = policy_cls(
+            obs_space=self.state_interpreter.observation_space,
+            action_space=self.action_interpreter.action_space,
+            weight_file=Path(checkpoint_path) if checkpoint_path else None,
+        )
+        if checkpoint_path:
+            self.policy.eval()
+        self.pred_score = None
+
+    def __str__(self):
+        return "TopkDropoutSelectionStrategy"
+
+
+class TopkDropoutDynamicStrategy(TopkDropoutSignalStrategy):
+    def __init__(
+        self,
+        *,
+        dim,
+        stock_num,
+        topk,
+        n_drop,
+        signal_key="signal",
+        policy_cls=discrete.MetaPPO,
+        checkpoint_path=None,
+        **kwargs,
+    ):
+        super(TopkDropoutSignalStrategy, self).__init__(
+            topk=topk, n_drop=n_drop, **kwargs
+        )
+        self.signal_key = signal_key
+        self.policy_cls = policy_cls
+        self.state_interpreter = TradeStrategyStateInterpreter(
+            dim=dim, stock_num=stock_num
+        )
+        self.action_interpreter = TopkDropoutDynamicStrategyActionInterpreter(
+            topk=topk, n_drop=n_drop, stock_num=stock_num, signal_key=signal_key
+        )
+        self.baseline_action_interpreter = TopkDropoutDynamicStrategyActionInterpreter(
+            topk=topk,
+            n_drop=n_drop,
+            stock_num=stock_num,
+            signal_key=signal_key,
+            baseline=True,
+        )
+        self.policy = policy_cls(
+            obs_space=self.state_interpreter.observation_space,
+            action_space=self.action_interpreter.action_space,
+            weight_file=Path(checkpoint_path) if checkpoint_path else None,
+        )
+        if checkpoint_path:
+            self.policy.eval()
+        self.pred_score = None
+
+    def __str__(self):
+        return "TopkDropoutDynamicStrategy"
+
+    def prepare_trading_with_action(self, action: TopkDropoutDynamicStrategyAction):
+        super(TopkDropoutDynamicStrategy, self).prepare_trading_with_action(action)
+        self.topk = action.topk
+        self.n_drop = action.n_drop
 
 
 class WeightStrategy(WeightStrategyBase, TradeStrategy):

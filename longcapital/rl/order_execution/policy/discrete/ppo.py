@@ -33,9 +33,7 @@ class PPO(PPOPolicy):
         weight_file: Optional[Path] = None,
     ) -> None:
         net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, attn_pooling=True)
-        actor = Actor(net, action_space.shape, device=auto_device(net)).to(
-            auto_device(net)
-        )
+        actor = Actor(net, action_space.n, device=auto_device(net)).to(auto_device(net))
 
         net = MetaNet(
             obs_space.shape,
