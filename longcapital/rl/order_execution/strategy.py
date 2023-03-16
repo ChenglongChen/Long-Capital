@@ -2,6 +2,7 @@ import copy
 from pathlib import Path
 from typing import Optional
 
+import numpy as np
 import pandas as pd
 import torch.nn.functional as F  # noqa
 from longcapital.rl.order_execution.interpreter import (
@@ -25,6 +26,49 @@ from qlib.contrib.strategy import TopkDropoutStrategy as TopkDropoutStrategyBase
 from qlib.contrib.strategy import WeightStrategyBase
 from qlib.utils.time import epsilon_change
 from tianshou.data import Batch
+
+
+class FeatureBuffer:
+    def __init__(self, size):
+        assert size >= 1
+        self.size = size
+        self._buffer = [None] * size
+        self._curr = 0
+
+    def add(self, f):
+        self._buffer[self._curr] = f
+        self._curr = (self._curr + 1) % self.size
+
+    def get(self):
+        if self.size == 1:
+            return self._buffer[0]
+        else:
+            curr = (self._curr - 1) % self.size
+            res = self._buffer[curr]
+            index = res.index.tolist()
+            columns = res.columns.tolist()
+            for i in range(2, self.size + 1):
+                curr = (self._curr - i) % self.size
+                cols = pd.MultiIndex.from_tuples(
+                    [(f, f"{c}_{i - 1}") for f, c in columns]
+                )
+                if self._buffer[curr] is None:
+                    f = self._get_dummy_feature(index=index, columns=cols)
+                else:
+                    f = self._buffer[curr]
+                    f.columns = cols
+                res = pd.merge(res, f, on="instrument", how="left")
+                res.fillna(0, inplace=True)
+            return res
+
+    def _get_dummy_feature(self, index, columns):
+        df = pd.DataFrame(
+            np.zeros((len(index), len(columns)), dtype=float),
+            index=index,
+            columns=columns,
+        )
+        df.index.rename("instrument", inplace=True)
+        return df
 
 
 class TradeStrategy:
@@ -52,6 +96,16 @@ class TradeStrategy:
         pred_start_time: Optional[pd.Timestamp] = None,
         pred_end_time: Optional[pd.Timestamp] = None,
     ):
+        f = self._get_feature_one_step(feature, pred_start_time, pred_end_time)
+        self.feature_buffer.add(f)
+        return self.feature_buffer.get()
+
+    def _get_feature_one_step(
+        self,
+        feature=None,
+        pred_start_time: Optional[pd.Timestamp] = None,
+        pred_end_time: Optional[pd.Timestamp] = None,
+    ):
         if feature is None:
             if pred_start_time is None or pred_end_time is None:
                 pred_start_time, pred_end_time = self.get_pred_start_end_time()
@@ -59,20 +113,27 @@ class TradeStrategy:
                 start_time=pred_start_time, end_time=pred_end_time
             )
 
-        stock_weight_dict = (
-            self.executor.trade_account.current_position.get_stock_weight_dict(
-                only_stock=False
+        position = copy.deepcopy(self.executor.trade_account.current_position.position)
+        for k in ["cash", "now_account_value"]:
+            if k in position:
+                position.pop(k)
+        if len(position) == 0:
+            for k in ["amount", "price", "weight", "count_day"]:
+                feature[("feature", k)] = 0
+        else:
+            position = pd.DataFrame(position).T
+            position.columns = pd.MultiIndex.from_tuples(
+                [("feature", c) for c in position.columns]
             )
-        )
-        current_position_list = list(stock_weight_dict.keys())
-        feature[("feature", "position")] = 0
-        feature[("feature", "unhold")] = 1
-        feature.loc[
-            feature.index.isin(current_position_list), ("feature", "position")
-        ] = 1
-        feature.loc[
-            feature.index.isin(current_position_list), ("feature", "unhold")
-        ] = 0
+            position.index.rename("instrument", inplace=True)
+            feature = pd.merge(feature, position, on="instrument", how="left")
+            feature.fillna(0, inplace=True)
+        feature[("feature", "position")] = (
+            feature[("feature", "count_day")] > 0
+        ).astype(float)
+        feature[("feature", "unhold")] = (
+            feature[("feature", "count_day")] == 0
+        ).astype(float)
 
         # sort to make sure the ranking distribution is similar across different dates
         feature.sort_values(
@@ -160,13 +221,15 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, TradeStrategy):
         checkpoint_path=None,
         signal_key="signal",
         policy_cls=discrete.PPO,
+        feature_buffer_size=1,
         **kwargs,
     ):
         super().__init__(topk=topk, n_drop=n_drop, **kwargs)
+        self.feature_buffer = FeatureBuffer(size=feature_buffer_size)
         self.policy_cls = policy_cls
         self.signal_key = signal_key
         self.state_interpreter = TradeStrategyStateInterpreter(
-            dim=dim, stock_num=stock_num
+            dim=dim * feature_buffer_size, stock_num=stock_num
         )
         self.action_interpreter = TopkDropoutStrategyActionInterpreter(
             topk=topk, n_drop=n_drop
@@ -214,14 +277,16 @@ class TopkDropoutSignalStrategy(TopkDropoutStrategyBase, TradeStrategy):
         n_drop,
         signal_key="signal",
         policy_cls=continuous.MetaTD3,
+        feature_buffer_size=1,
         checkpoint_path=None,
         **kwargs,
     ):
         super().__init__(topk=topk, n_drop=n_drop, **kwargs)
+        self.feature_buffer = FeatureBuffer(size=feature_buffer_size)
         self.signal_key = signal_key
         self.policy_cls = policy_cls
         self.state_interpreter = TradeStrategyStateInterpreter(
-            dim=dim, stock_num=stock_num
+            dim=dim * feature_buffer_size, stock_num=stock_num
         )
         self.action_interpreter = TopkDropoutSignalStrategyActionInterpreter(
             stock_num=stock_num, signal_key=signal_key
@@ -276,16 +341,18 @@ class TopkDropoutSelectionStrategy(TopkDropoutSignalStrategy):
         n_drop,
         signal_key="signal",
         policy_cls=discrete.PPO,
+        feature_buffer_size=1,
         checkpoint_path=None,
         **kwargs,
     ):
         super(TopkDropoutSignalStrategy, self).__init__(
             topk=topk, n_drop=n_drop, **kwargs
         )
+        self.feature_buffer = FeatureBuffer(size=feature_buffer_size)
         self.signal_key = signal_key
         self.policy_cls = policy_cls
         self.state_interpreter = TradeStrategyStateInterpreter(
-            dim=dim, stock_num=stock_num
+            dim=dim * feature_buffer_size, stock_num=stock_num
         )
         self.action_interpreter = TopkDropoutSelectionStrategyActionInterpreter(
             topk=topk, n_drop=n_drop, stock_num=stock_num, signal_key=signal_key
@@ -322,16 +389,18 @@ class TopkDropoutDynamicStrategy(TopkDropoutSignalStrategy):
         n_drop,
         signal_key="signal",
         policy_cls=discrete.MetaPPO,
+        feature_buffer_size=1,
         checkpoint_path=None,
         **kwargs,
     ):
         super(TopkDropoutSignalStrategy, self).__init__(
             topk=topk, n_drop=n_drop, **kwargs
         )
+        self.feature_buffer = FeatureBuffer(size=feature_buffer_size)
         self.signal_key = signal_key
         self.policy_cls = policy_cls
         self.state_interpreter = TradeStrategyStateInterpreter(
-            dim=dim, stock_num=stock_num
+            dim=dim * feature_buffer_size, stock_num=stock_num
         )
         self.action_interpreter = TopkDropoutDynamicStrategyActionInterpreter(
             topk=topk, n_drop=n_drop, stock_num=stock_num, signal_key=signal_key
@@ -371,16 +440,18 @@ class WeightStrategy(WeightStrategyBase, TradeStrategy):
         signal_key="signal",
         checkpoint_path=None,
         policy_cls=continuous.MetaTD3,
+        feature_buffer_size=1,
         verbose=False,
         **kwargs,
     ):
         super().__init__(**kwargs)
+        self.feature_buffer = FeatureBuffer(size=feature_buffer_size)
         self.verbose = verbose
         self.signal_key = signal_key
         self.policy_cls = policy_cls
 
         self.state_interpreter = TradeStrategyStateInterpreter(
-            dim=dim, stock_num=stock_num
+            dim=dim * feature_buffer_size, stock_num=stock_num
         )
         self.action_interpreter = WeightStrategyActionInterpreter(
             stock_num=stock_num, topk=topk, signal_key=signal_key
@@ -457,16 +528,18 @@ class TopkStrategy(WeightStrategy):
         checkpoint_path=None,
         signal_key="signal",
         policy_cls=discrete.MetaPPO,
+        feature_buffer_size=1,
         verbose=False,
         **kwargs,
     ):
         super(WeightStrategy, self).__init__(**kwargs)
+        self.feature_buffer = FeatureBuffer(size=feature_buffer_size)
         self.verbose = verbose
         self.signal_key = signal_key
         self.policy_cls = policy_cls
 
         self.state_interpreter = TradeStrategyStateInterpreter(
-            dim=dim, stock_num=stock_num
+            dim=dim * feature_buffer_size, stock_num=stock_num
         )
         self.action_interpreter = TopkActionInterpreter(stock_num=stock_num)
         self.baseline_action_interpreter = TopkActionInterpreter(
