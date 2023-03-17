@@ -27,7 +27,6 @@ class Alpha158(QlibAlpha158):
         fit_end_time=None,
         process_type=DataHandlerLP.PTYPE_A,
         filter_pipe=None,
-        inst_processor=None,
         loss_type="mse",
         curr_label_price_expr="$open",
         next_label_price_expr="$open",
@@ -66,7 +65,6 @@ class Alpha158(QlibAlpha158):
                 },
                 "filter_pipe": filter_pipe,
                 "freq": freq,
-                "inst_processor": inst_processor,
             },
         }
         super(QlibAlpha158, self).__init__(

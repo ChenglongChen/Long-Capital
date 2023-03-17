@@ -39,7 +39,7 @@ class FeatureBuffer:
         self._buffer[self._curr] = f
         self._curr = (self._curr + 1) % self.size
 
-    def get(self):
+    def collect(self):
         if self.size == 1:
             return self._buffer[0]
         else:
@@ -87,6 +87,7 @@ class TradeStrategy:
         )
         obs = [{"obs": self.state_interpreter.interpret(state), "info": {}}]
         policy_out = self.policy(Batch(obs))
+        print(policy_out.act)
         action = self.action_interpreter.interpret(state, policy_out.act)
         return action
 
@@ -98,7 +99,7 @@ class TradeStrategy:
     ):
         f = self._get_feature_one_step(feature, pred_start_time, pred_end_time)
         self.feature_buffer.add(f)
-        return self.feature_buffer.get()
+        return self.feature_buffer.collect()
 
     def _get_feature_one_step(
         self,
@@ -118,7 +119,7 @@ class TradeStrategy:
             if k in position:
                 position.pop(k)
         if len(position) == 0:
-            for k in ["amount", "price", "weight", "count_day"]:
+            for k in ["amount", "price", "weight", "count_day"][2:]:
                 feature[("feature", k)] = 0
         else:
             position = pd.DataFrame(position).T
@@ -126,7 +127,9 @@ class TradeStrategy:
                 [("feature", c) for c in position.columns]
             )
             position.index.rename("instrument", inplace=True)
-            feature = pd.merge(feature, position, on="instrument", how="left")
+            feature = pd.merge(
+                feature, position[position.columns[2:]], on="instrument", how="left"
+            )
             feature.fillna(0, inplace=True)
         feature[("feature", "position")] = (
             feature[("feature", "count_day")] > 0
@@ -439,6 +442,7 @@ class WeightStrategy(WeightStrategyBase, TradeStrategy):
         topk,
         signal_key="signal",
         checkpoint_path=None,
+        equal_weight=True,
         policy_cls=continuous.MetaTD3,
         feature_buffer_size=1,
         verbose=False,
@@ -454,10 +458,17 @@ class WeightStrategy(WeightStrategyBase, TradeStrategy):
             dim=dim * feature_buffer_size, stock_num=stock_num
         )
         self.action_interpreter = WeightStrategyActionInterpreter(
-            stock_num=stock_num, topk=topk, signal_key=signal_key
+            stock_num=stock_num,
+            topk=topk,
+            signal_key=signal_key,
+            equal_weight=equal_weight,
         )
         self.baseline_action_interpreter = WeightStrategyActionInterpreter(
-            stock_num=stock_num, topk=topk, signal_key=signal_key, baseline=True
+            stock_num=stock_num,
+            topk=topk,
+            signal_key=signal_key,
+            equal_weight=equal_weight,
+            baseline=True,
         )
         self.policy = policy_cls(
             obs_space=self.state_interpreter.observation_space,

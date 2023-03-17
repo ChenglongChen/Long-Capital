@@ -1,3 +1,4 @@
+import math
 from typing import Any, Dict, Optional, Sequence, Tuple, Type, Union
 
 import numpy as np
@@ -9,11 +10,40 @@ from torch import Tensor, nn
 EPS = 1e-8
 NEG_INF = -1e8
 MASK_VALUE = NEG_INF
+MAX_POSITIONS = 1000
 
 
 def get_shape(x: Tensor):
     shape = list(x.size())
     return shape
+
+
+class PositionalEncoding(nn.Module):
+    def __init__(
+        self,
+        d_model: int,
+        dropout: float = 0.1,
+        max_position: int = MAX_POSITIONS,
+    ):
+        super().__init__()
+        self.dropout = nn.Dropout(p=dropout)
+        self.max_position = max_position
+
+        position = torch.arange(max_position).unsqueeze(1)
+        div_term = torch.exp(
+            torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model)
+        )
+        pe = torch.zeros(max_position, d_model)
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        self.pe = nn.Embedding.from_pretrained(embeddings=pe, freeze=True)
+
+    def forward(self, position_ids: Tensor) -> Tensor:
+        """
+        Args:
+            position_ids: Tensor, shape [batch_size, seq_len]
+        """
+        return self.dropout(self.pe(position_ids))
 
 
 class Pooling(nn.Module):
@@ -118,6 +148,7 @@ class MetaNet(Net):
         dim_feedforward=256,
         num_layers=6,
         dropout=0.1,
+        position_embedding=True,
     ) -> None:
         state_shape = (state_shape[-1],)
         if action_shape != 0:
@@ -137,18 +168,22 @@ class MetaNet(Net):
         )
         self.self_attn = self_attn
         self.attn_pooling = attn_pooling
+        self.position_embedding = position_embedding
         assert not (self.self_attn and self.attn_pooling)
-        self.attn = None
+        if self.position_embedding and (self.self_attn or self.attn_pooling):
+            self.pos_encoder = PositionalEncoding(
+                d_model=self.output_dim,
+                dropout=dropout,
+            )
         if self.self_attn:
-            d_model = self.output_dim
             encoder_layer = nn.TransformerEncoderLayer(
-                d_model=d_model,
+                d_model=self.output_dim,
                 nhead=nhead,
                 dim_feedforward=dim_feedforward,
                 dropout=dropout,
                 batch_first=True,
             )
-            encoder_norm = nn.LayerNorm(d_model)
+            encoder_norm = nn.LayerNorm(self.output_dim)
             self.attn = nn.TransformerEncoder(
                 encoder_layer=encoder_layer,
                 num_layers=num_layers,
@@ -173,6 +208,9 @@ class MetaNet(Net):
         obs = obs.view(-1, d)
         logits, state = super().forward(obs, state, info)
         logits = logits.view(bsz, ch, -1)
+        if self.position_embedding:
+            position_ids = torch.tile(torch.arange(ch), [bsz, 1])
+            logits += self.pos_encoder(position_ids)
         if self.self_attn:
             logits = self.attn(logits, src_key_padding_mask=mask)
         elif self.attn_pooling:
