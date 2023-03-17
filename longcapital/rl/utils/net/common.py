@@ -7,6 +7,8 @@ import torch.nn.functional as F  # noqa
 from tianshou.utils.net.common import MLP
 from torch import Tensor, nn
 
+ModuleType = Type[nn.Module]
+
 EPS = 1e-8
 NEG_INF = -1e8
 MASK_VALUE = NEG_INF
@@ -16,27 +18,6 @@ MAX_POSITIONS = 1000
 def get_shape(x: Tensor):
     shape = list(x.size())
     return shape
-
-
-class PositionalEncoding(nn.Module):
-    # reference: https://pytorch.org/tutorials/beginner/transformer_tutorial.html
-    def __init__(self, d_model, dropout=0.1, max_len=5000):
-        super(PositionalEncoding, self).__init__()
-        self.dropout = nn.Dropout(p=dropout)
-
-        pe = torch.zeros(max_len, d_model)
-        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(
-            torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model)
-        )
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
-        pe = pe.unsqueeze(0).transpose(0, 1)
-        self.register_buffer("pe", pe)
-
-    def forward(self, x):
-        x = x + self.pe[: x.size(0), :]
-        return self.dropout(x)
 
 
 class Pooling(nn.Module):
@@ -74,7 +55,7 @@ class MeanPooling(Pooling):
 
     def pooling(self, x: Tensor, mask: Optional[Tensor] = None) -> Tensor:
         mask = mask.unsqueeze(2)
-        y = (x * mask).sum(1) / (mask.sum(1) + EPS)
+        y = (x * (1 - mask)).sum(1) / ((1 - mask).sum(1) + EPS)
         return y
 
 
@@ -87,7 +68,7 @@ class MaxPooling(Pooling):
         m = mask.unsqueeze(2).transpose(1, 2)
         y = x.transpose(1, 2)
         s = int(m.size(2))
-        z = torch.max_pool1d(y + (1 - m) * NEG_INF, s)
+        z = torch.max_pool1d((1 - m) * y + m * NEG_INF, s)
         # mask out invalid entry with all mask value
         z[valid] = 0.0
         return z
@@ -109,10 +90,31 @@ class AttentionPooling(Pooling):
         k = self.K(x)
         attn = self.Q(k / (self.d_model**0.5))
         m = mask.unsqueeze(2)
-        attn = m * attn + (1 - m) * NEG_INF
+        attn = (1 - m) * attn + m * NEG_INF
         attn = self.dropout(F.softmax(attn, dim=1))
-        x = (v * attn * m).sum(1)
+        x = (v * attn * (1 - m)).sum(1)
         return x
+
+
+class PositionalEncoding(nn.Module):
+    # reference: https://pytorch.org/tutorials/beginner/transformer_tutorial.html
+    def __init__(self, d_model, dropout=0.1, max_len=5000):
+        super(PositionalEncoding, self).__init__()
+        self.dropout = nn.Dropout(p=dropout)
+
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(
+            torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model)
+        )
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        pe = pe.unsqueeze(0).transpose(0, 1)
+        self.register_buffer("pe", pe)
+
+    def forward(self, x):
+        x = x + self.pe[: x.size(0), :]
+        return self.dropout(x)
 
 
 class Transformer(nn.Module):
@@ -140,11 +142,13 @@ class Transformer(nn.Module):
         )
         self.output_dim = d_model
 
-    def forward(self, x):
-        return self.encoder(x)
-
-
-ModuleType = Type[nn.Module]
+    def forward(
+        self,
+        src: Tensor,
+        mask: Optional[Tensor] = None,
+        src_key_padding_mask: Optional[Tensor] = None,
+    ) -> Tensor:
+        return self.encoder(src, mask=mask, src_key_padding_mask=src_key_padding_mask)
 
 
 class MetaNet(nn.Module):
@@ -158,6 +162,7 @@ class MetaNet(nn.Module):
         device: Union[str, int, torch.device] = "cpu",
         softmax: bool = False,
         concat: bool = False,
+        use_dueling: bool = False,
         num_atoms: int = 1,
         linear_layer: Type[nn.Linear] = nn.Linear,
         attn_pooling=False,
@@ -173,6 +178,7 @@ class MetaNet(nn.Module):
             action_shape = (1,)
         self.device = device
         self.softmax = softmax
+        self.use_dueling = use_dueling
         self.num_atoms = num_atoms
         input_dim = int(np.prod(state_shape))
         action_dim = int(np.prod(action_shape)) * num_atoms
@@ -195,7 +201,7 @@ class MetaNet(nn.Module):
         assert not (self.self_attn and self.attn_pooling)
         if self.position_embedding:
             self.pe = PositionalEncoding(
-                d_model=input_dim,
+                d_model=self.output_dim,
                 dropout=dropout,
             )
         if self.self_attn:
@@ -219,8 +225,6 @@ class MetaNet(nn.Module):
             device=self.device,
             dtype=torch.float32,
         )
-        if self.position_embedding:
-            obs = self.pe(obs)
         bsz, ch, d = obs.size(0), obs.size(1), obs.size(2)
         mask = obs.eq(MASK_VALUE).all(2).float()
         obs = obs.view(-1, d)
@@ -228,8 +232,10 @@ class MetaNet(nn.Module):
         if self.softmax:
             logits = torch.softmax(logits, dim=-1)
         logits = logits.view(bsz, ch, -1)
+        if self.position_embedding:
+            logits = self.pe(logits)
         if self.self_attn:
             logits = self.attn(logits, src_key_padding_mask=mask)
         elif self.attn_pooling:
-            logits = self.attn(logits, mask=1 - mask)
+            logits = self.attn(logits, mask=mask)
         return logits, state
