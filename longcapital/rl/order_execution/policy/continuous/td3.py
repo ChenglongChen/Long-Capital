@@ -15,7 +15,7 @@ class MetaTD3(TD3Policy):
         self,
         obs_space: gym.Space,
         action_space: gym.Space,
-        hidden_sizes: List[int] = [32, 16, 8],
+        hidden_sizes: List[int] = [64, 64, 64],
         reward_normalization: bool = False,
         n_step: int = 3,
         gamma: float = 0.99,

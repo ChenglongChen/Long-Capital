@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Sequence, Tuple, Type, Union
 import numpy as np
 import torch
 import torch.nn.functional as F  # noqa
-from tianshou.utils.net.common import Net
+from tianshou.utils.net.common import MLP
 from torch import Tensor, nn
 
 EPS = 1e-8
@@ -19,31 +19,24 @@ def get_shape(x: Tensor):
 
 
 class PositionalEncoding(nn.Module):
-    def __init__(
-        self,
-        d_model: int,
-        dropout: float = 0.1,
-        max_position: int = MAX_POSITIONS,
-    ):
-        super().__init__()
+    # reference: https://pytorch.org/tutorials/beginner/transformer_tutorial.html
+    def __init__(self, d_model, dropout=0.1, max_len=5000):
+        super(PositionalEncoding, self).__init__()
         self.dropout = nn.Dropout(p=dropout)
-        self.max_position = max_position
 
-        position = torch.arange(max_position).unsqueeze(1)
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
         div_term = torch.exp(
-            torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model)
+            torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model)
         )
-        pe = torch.zeros(max_position, d_model)
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
-        self.pe = nn.Embedding.from_pretrained(embeddings=pe, freeze=True)
+        pe = pe.unsqueeze(0).transpose(0, 1)
+        self.register_buffer("pe", pe)
 
-    def forward(self, position_ids: Tensor) -> Tensor:
-        """
-        Args:
-            position_ids: Tensor, shape [batch_size, seq_len]
-        """
-        return self.dropout(self.pe(position_ids))
+    def forward(self, x):
+        x = x + self.pe[: x.size(0), :]
+        return self.dropout(x)
 
 
 class Pooling(nn.Module):
@@ -122,13 +115,39 @@ class AttentionPooling(Pooling):
         return x
 
 
+class Transformer(nn.Module):
+    def __init__(
+        self,
+        d_model=64,
+        num_layers=6,
+        nhead=2,
+        dropout=0.1,
+        **kwargs,
+    ):
+        super().__init__()
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=d_model,
+            nhead=nhead,
+            dim_feedforward=d_model * 4,
+            dropout=dropout,
+            batch_first=True,
+        )
+        encoder_norm = nn.LayerNorm(d_model)
+        self.encoder = nn.TransformerEncoder(
+            encoder_layer=encoder_layer,
+            num_layers=num_layers,
+            norm=encoder_norm,
+        )
+        self.output_dim = d_model
+
+    def forward(self, x):
+        return self.encoder(x)
+
+
 ModuleType = Type[nn.Module]
-ArgsType = Union[
-    Tuple[Any, ...], Dict[Any, Any], Sequence[Tuple[Any, ...]], Sequence[Dict[Any, Any]]
-]
 
 
-class MetaNet(Net):
+class MetaNet(nn.Module):
     def __init__(
         self,
         state_shape: Union[int, Sequence[int]],
@@ -140,54 +159,51 @@ class MetaNet(Net):
         softmax: bool = False,
         concat: bool = False,
         num_atoms: int = 1,
-        dueling_param: Optional[Tuple[Dict[str, Any], Dict[str, Any]]] = None,
         linear_layer: Type[nn.Linear] = nn.Linear,
         attn_pooling=False,
         self_attn=False,
         nhead=2,
-        dim_feedforward=256,
         num_layers=6,
         dropout=0.1,
         position_embedding=True,
     ) -> None:
+        super().__init__()
         state_shape = (state_shape[-1],)
         if action_shape != 0:
             action_shape = (1,)
-        super(MetaNet, self).__init__(
-            state_shape,
-            action_shape,
+        self.device = device
+        self.softmax = softmax
+        self.num_atoms = num_atoms
+        input_dim = int(np.prod(state_shape))
+        action_dim = int(np.prod(action_shape)) * num_atoms
+        if concat:
+            input_dim += action_dim
+        output_dim = action_dim if not self.use_dueling and not concat else 0
+        self.mlp = MLP(
+            input_dim,
+            output_dim,
             hidden_sizes,
             norm_layer,
             activation,
             device,
-            softmax,
-            concat,
-            num_atoms,
-            dueling_param,
             linear_layer,
         )
+        self.output_dim = self.mlp.output_dim
         self.self_attn = self_attn
         self.attn_pooling = attn_pooling
         self.position_embedding = position_embedding
         assert not (self.self_attn and self.attn_pooling)
-        if self.position_embedding and (self.self_attn or self.attn_pooling):
-            self.pos_encoder = PositionalEncoding(
-                d_model=self.output_dim,
+        if self.position_embedding:
+            self.pe = PositionalEncoding(
+                d_model=input_dim,
                 dropout=dropout,
             )
         if self.self_attn:
-            encoder_layer = nn.TransformerEncoderLayer(
+            self.attn = Transformer(
                 d_model=self.output_dim,
                 nhead=nhead,
-                dim_feedforward=dim_feedforward,
-                dropout=dropout,
-                batch_first=True,
-            )
-            encoder_norm = nn.LayerNorm(self.output_dim)
-            self.attn = nn.TransformerEncoder(
-                encoder_layer=encoder_layer,
                 num_layers=num_layers,
-                norm=encoder_norm,
+                dropout=dropout,
             )
         elif self.attn_pooling:
             self.attn = AttentionPooling(d_model=self.output_dim, dropout=dropout)
@@ -203,14 +219,15 @@ class MetaNet(Net):
             device=self.device,
             dtype=torch.float32,
         )
+        if self.position_embedding:
+            obs = self.pe(obs)
         bsz, ch, d = obs.size(0), obs.size(1), obs.size(2)
         mask = obs.eq(MASK_VALUE).all(2).float()
         obs = obs.view(-1, d)
-        logits, state = super().forward(obs, state, info)
+        logits = self.mlp(obs)
+        if self.softmax:
+            logits = torch.softmax(logits, dim=-1)
         logits = logits.view(bsz, ch, -1)
-        if self.position_embedding:
-            position_ids = torch.tile(torch.arange(ch), [bsz, 1])
-            logits += self.pos_encoder(position_ids)
         if self.self_attn:
             logits = self.attn(logits, src_key_padding_mask=mask)
         elif self.attn_pooling:

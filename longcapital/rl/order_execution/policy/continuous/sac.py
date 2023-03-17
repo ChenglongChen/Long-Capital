@@ -15,7 +15,7 @@ class MetaSAC(SACPolicy):
         self,
         obs_space: gym.Space,
         action_space: gym.Space,
-        hidden_sizes: List[int] = [32, 16, 8],
+        hidden_sizes: List[int] = [64, 64, 64],
         n_step: int = 1,
         gamma: float = 0.99,
         tau: float = 0.005,
