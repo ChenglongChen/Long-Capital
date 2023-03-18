@@ -4,6 +4,7 @@ from typing import Any, List, Optional, Tuple, Union
 
 import pandas as pd
 import torch.nn.functional as F  # noqa
+from longcapital.rl.order_execution.aux_info import ImitationSignalCollector
 from longcapital.rl.order_execution.buffer import FeatureBuffer
 from longcapital.rl.order_execution.interpreter import (
     DirectSelectionActionInterpreter,
@@ -22,6 +23,7 @@ from qlib.backtest.decision import TradeDecisionWO
 from qlib.backtest.position import Position
 from qlib.contrib.strategy import TopkDropoutStrategy as TopkDropoutStrategyBase
 from qlib.contrib.strategy import WeightStrategyBase
+from qlib.rl.aux_info import AuxiliaryInfoCollector
 from qlib.rl.interpreter import ActionInterpreter, StateInterpreter
 from qlib.strategy.base import BaseStrategy
 from qlib.utils.time import epsilon_change
@@ -39,6 +41,7 @@ class BaseTradeStrategy(BaseStrategy):
     state_interpreter: StateInterpreter
     action_interpreter: ActionInterpreter
     baseline_action_interpreter: ActionInterpreter
+    aux_info_collector: AuxiliaryInfoCollector
     policy: BasePolicy
     feature_buffer: FeatureBuffer
     position_feature_cols: List
@@ -234,6 +237,9 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         self.baseline_action_interpreter = TopkDropoutStrategyActionInterpreter(
             topk=topk, n_drop=n_drop, baseline=True
         )
+        self.aux_info_collector = ImitationSignalCollector(
+            stock_num=stock_num, signal_key=signal_key
+        )
         self.policy = policy_cls(
             obs_space=self.state_interpreter.observation_space,
             action_space=self.action_interpreter.action_space,
@@ -292,6 +298,9 @@ class TopkDropoutSignalStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         )
         self.baseline_action_interpreter = TopkDropoutSignalStrategyActionInterpreter(
             stock_num=stock_num, signal_key=signal_key, baseline=True
+        )
+        self.aux_info_collector = ImitationSignalCollector(
+            stock_num=stock_num, signal_key=signal_key
         )
         self.policy = policy_cls(
             obs_space=self.state_interpreter.observation_space,
@@ -367,6 +376,9 @@ class TopkDropoutSelectionStrategy(TopkDropoutSignalStrategy):
                 baseline=True,
             )
         )
+        self.aux_info_collector = ImitationSignalCollector(
+            stock_num=stock_num, signal_key=signal_key
+        )
         self.policy = policy_cls(
             obs_space=self.state_interpreter.observation_space,
             action_space=self.action_interpreter.action_space,
@@ -414,6 +426,9 @@ class TopkDropoutDynamicStrategy(TopkDropoutSignalStrategy):
             stock_num=stock_num,
             signal_key=signal_key,
             baseline=True,
+        )
+        self.aux_info_collector = ImitationSignalCollector(
+            stock_num=stock_num, signal_key=signal_key
         )
         self.policy = policy_cls(
             obs_space=self.state_interpreter.observation_space,
@@ -471,6 +486,9 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
             signal_key=signal_key,
             equal_weight=equal_weight,
             baseline=True,
+        )
+        self.aux_info_collector = ImitationSignalCollector(
+            stock_num=stock_num, signal_key=signal_key
         )
         self.policy = policy_cls(
             obs_space=self.state_interpreter.observation_space,
@@ -559,6 +577,9 @@ class DirectSelectionStrategy(WeightStrategy):
         self.action_interpreter = DirectSelectionActionInterpreter(stock_num=stock_num)
         self.baseline_action_interpreter = DirectSelectionActionInterpreter(
             stock_num=stock_num, baseline=True
+        )
+        self.aux_info_collector = ImitationSignalCollector(
+            stock_num=stock_num, signal_key=signal_key
         )
         self.policy = policy_cls(
             obs_space=self.state_interpreter.observation_space,
