@@ -24,6 +24,7 @@ class TradeStrategySimulator(
         pos_type: str = "Position",
         exchange_kwargs: Any = {},
         verbose: bool = False,
+        skip_nontradable_date: bool = True,
         **kwargs: Any,
     ) -> None:
         super().__init__(initial_state)
@@ -44,7 +45,6 @@ class TradeStrategySimulator(
             )
         else:
             start_time, end_time = initial_state.start_time, initial_state.end_time
-        print(f"start_time: {start_time}, end_time: {end_time}")
 
         trade_account = create_account_instance(
             start_time=start_time,
@@ -75,7 +75,27 @@ class TradeStrategySimulator(
         self.trade_executor = init_instance_by_config(
             executor, accept_types=BaseExecutor
         )
+
+        # move necessary steps forward to the first tradable time
         self.trade_executor.reset(start_time=start_time, end_time=end_time)
+        if skip_nontradable_date:
+            trade_len = self.trade_executor.trade_calendar.get_trade_len()
+            trade_start_time = start_time
+            for trade_step in range(trade_len):
+                trade_start_time = self.trade_executor.trade_calendar.get_step_time(
+                    trade_step, shift=0
+                )[0]
+                pred_start_time = self.trade_executor.trade_calendar.get_step_time(
+                    trade_step, shift=1
+                )[0]
+                if pred_start_time >= self.trade_executor.trade_calendar.start_time:
+                    break
+            start_time = trade_start_time
+            end_time = self.trade_executor.trade_calendar.end_time
+            self.trade_executor.reset(start_time=start_time, end_time=end_time)
+        print(f"start_time: {start_time}, end_time: {end_time}")
+
+        # reset for trade_strategy
         self.trade_strategy.reset_common_infra(self.common_infra)
         self.trade_strategy.reset_level_infra(self.trade_executor.get_level_infra())
 

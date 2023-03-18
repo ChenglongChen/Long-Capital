@@ -1,4 +1,4 @@
-# Long-Capital: Quant Trading with Qlib
+# Long-Capital: Quant Trading with Microsoft [Qlib](https://github.com/microsoft/qlib)
 
 ## Performance
 |Method| Signal Model | Trading Strategy | IR |

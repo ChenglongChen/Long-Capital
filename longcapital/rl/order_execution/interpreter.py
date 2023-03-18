@@ -1,5 +1,5 @@
 import itertools
-from typing import Dict, NamedTuple
+from typing import Dict, NamedTuple, Union
 
 import numpy as np
 import pandas as pd
@@ -39,7 +39,9 @@ class TradeStrategyStateInterpreter(StateInterpreter[TradeStrategyState, np.ndar
 
 
 class TopkDropoutStrategyAction(NamedTuple):
-    n_drop: int
+    signal: Union[pd.DataFrame, None] = None
+    topk: int = 0
+    n_drop: int = 0
 
 
 class TopkDropoutStrategyActionInterpreter(
@@ -62,12 +64,8 @@ class TopkDropoutStrategyActionInterpreter(
         return TopkDropoutStrategyAction(n_drop=n_drop)
 
 
-class TopkDropoutSignalStrategyAction(NamedTuple):
-    signal: pd.DataFrame
-
-
 class TopkDropoutSignalStrategyActionInterpreter(
-    ActionInterpreter[TradeStrategyState, np.ndarray, TopkDropoutSignalStrategyAction]
+    ActionInterpreter[TradeStrategyState, np.ndarray, TopkDropoutStrategyAction]
 ):
     def __init__(
         self, stock_num, signal_key="signal", baseline=False, **kwargs
@@ -83,9 +81,9 @@ class TopkDropoutSignalStrategyActionInterpreter(
 
     def interpret(
         self, state: TradeStrategyState, action: torch.Tensor
-    ) -> TopkDropoutSignalStrategyAction:
+    ) -> TopkDropoutStrategyAction:
         if state.feature is None:
-            return TopkDropoutSignalStrategyAction(signal=None)
+            return TopkDropoutStrategyAction(signal=None)
 
         if isinstance(action, torch.Tensor):
             action = action.squeeze().detach().numpy()
@@ -94,11 +92,11 @@ class TopkDropoutSignalStrategyActionInterpreter(
         if not self.baseline:
             signal.loc[:] = action
 
-        return TopkDropoutSignalStrategyAction(signal=signal)
+        return TopkDropoutStrategyAction(signal=signal)
 
 
 class TopkDropoutSelectionStrategyActionInterpreter(
-    ActionInterpreter[TradeStrategyState, int, TopkDropoutSignalStrategyAction]
+    ActionInterpreter[TradeStrategyState, int, TopkDropoutStrategyAction]
 ):
     def __init__(
         self,
@@ -124,7 +122,7 @@ class TopkDropoutSelectionStrategyActionInterpreter(
 
     def interpret(
         self, state: TradeStrategyState, action: int
-    ) -> TopkDropoutSignalStrategyAction:
+    ) -> TopkDropoutStrategyAction:
         assert 0 <= action < self.num_combinations
         signal = state.feature[("feature", self.signal_key)][: self.stock_num].copy()
         if not self.baseline:
@@ -138,7 +136,55 @@ class TopkDropoutSelectionStrategyActionInterpreter(
                 signal.iloc[list(sell)] = -1000
                 signal.iloc[list(buy)] = 1000
 
-        return TopkDropoutSignalStrategyAction(signal=signal)
+        return TopkDropoutStrategyAction(signal=signal)
+
+
+class TopkDropoutDynamicStrategyActionInterpreter(
+    ActionInterpreter[TradeStrategyState, int, TopkDropoutStrategyAction]
+):
+    def __init__(
+        self,
+        topk: int,
+        n_drop: int,
+        stock_num: int,
+        signal_key="signal",
+        baseline=False,
+        **kwargs,
+    ) -> None:
+        self.topk = topk
+        self.n_drop = n_drop
+        self.signal_key = signal_key
+        self.stock_num = stock_num
+        self.baseline = baseline
+        self.shape = (stock_num,)
+
+    @property
+    def action_space(self) -> spaces.Box:
+        return spaces.Box(-100, 100, shape=self.shape, dtype=np.float32)
+
+    def interpret(
+        self, state: TradeStrategyState, action: torch.Tensor
+    ) -> TopkDropoutStrategyAction:
+
+        if isinstance(action, torch.Tensor):
+            action = action.squeeze().detach().numpy()
+
+        topk = self.topk
+        n_drop = self.n_drop
+        signal = state.feature[("feature", self.signal_key)][: self.stock_num].copy()
+        if not self.baseline:
+            hold = np.zeros(self.stock_num, dtype=int)
+            index = np.argpartition(-action, topk)[:topk]
+            hold[index] = 1
+            signal.iloc[:] = hold
+            position = state.feature[("feature", "position")][: self.stock_num].copy()
+            num_position = int(position.sum())
+            if num_position > 0:
+                n_drop = int((1 - hold[:num_position]).sum())
+            else:
+                n_drop = 0
+
+        return TopkDropoutStrategyAction(signal=signal, topk=topk, n_drop=n_drop)
 
 
 class WeightStrategyAction(NamedTuple):
@@ -246,57 +292,3 @@ class DirectSelectionActionInterpreter(
         }
 
         return WeightStrategyAction(target_weight_position=target_weight_position)
-
-
-class TopkDropoutDynamicStrategyAction(NamedTuple):
-    signal: pd.DataFrame
-    topk: int
-    n_drop: int
-
-
-class TopkDropoutDynamicStrategyActionInterpreter(
-    ActionInterpreter[TradeStrategyState, int, TopkDropoutDynamicStrategyAction]
-):
-    def __init__(
-        self,
-        topk: int,
-        n_drop: int,
-        stock_num: int,
-        signal_key="signal",
-        baseline=False,
-        **kwargs,
-    ) -> None:
-        self.topk = topk
-        self.n_drop = n_drop
-        self.signal_key = signal_key
-        self.stock_num = stock_num
-        self.baseline = baseline
-        self.shape = (stock_num,)
-
-    @property
-    def action_space(self) -> spaces.Box:
-        return spaces.Box(-100, 100, shape=self.shape, dtype=np.float32)
-
-    def interpret(
-        self, state: TradeStrategyState, action: torch.Tensor
-    ) -> TopkDropoutDynamicStrategyAction:
-
-        if isinstance(action, torch.Tensor):
-            action = action.squeeze().detach().numpy()
-
-        topk = self.topk
-        n_drop = self.n_drop
-        signal = state.feature[("feature", self.signal_key)][: self.stock_num].copy()
-        if not self.baseline:
-            hold = np.zeros(self.stock_num, dtype=int)
-            index = np.argpartition(-action, topk)[:topk]
-            hold[index] = 1
-            signal.iloc[:] = hold
-            position = state.feature[("feature", "position")][: self.stock_num].copy()
-            num_position = int(position.sum())
-            if num_position > 0:
-                n_drop = int((1 - hold[:num_position]).sum())
-            else:
-                n_drop = 0
-
-        return TopkDropoutDynamicStrategyAction(signal=signal, topk=topk, n_drop=n_drop)
