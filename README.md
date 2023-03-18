@@ -9,3 +9,4 @@ Quant Trading with Qlib
 
 ## Dependency
 - My fork of [Qlib](https://github.com/microsoft/qlib): https://github.com/ChenglongChen/qlib
+- You can get crowd source data from [investment_data](https://github.com/chenditc/investment_data)
