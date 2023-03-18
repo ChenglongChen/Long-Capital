@@ -16,7 +16,7 @@ class MetaPPO(PPOPolicy):
         self,
         obs_space: gym.Space,
         action_space: gym.Space,
-        hidden_sizes: List[int] = [64, 64, 64],
+        hidden_sizes: List[int] = [32, 16, 8],
         lr: float = 1e-4,
         discount_factor: float = 1.0,
         max_grad_norm: float = 100.0,
