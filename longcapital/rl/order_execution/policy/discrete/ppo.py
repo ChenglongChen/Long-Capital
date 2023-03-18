@@ -6,9 +6,10 @@ import numpy as np
 import torch
 from longcapital.rl.utils.net.common import MetaNet
 from longcapital.rl.utils.net.discrete import MetaActor, MetaCritic
-from qlib.rl.order_execution.policy import Trainer, auto_device, chain_dedup, set_weight
+from qlib.rl.order_execution.policy import Trainer, auto_device, set_weight
 from tianshou.data import Batch
 from tianshou.policy import PPOPolicy
+from tianshou.utils.net.common import ActorCritic
 from tianshou.utils.net.discrete import Actor, Critic
 
 
@@ -17,7 +18,7 @@ class PPO(PPOPolicy):
         self,
         obs_space: gym.Space,
         action_space: gym.Space,
-        hidden_sizes: List[int] = [32, 16, 8],
+        hidden_sizes: List[int] = [64, 64, 64],
         lr: float = 1e-4,
         weight_decay: float = 0.0,
         discount_factor: float = 1.0,
@@ -32,9 +33,7 @@ class PPO(PPOPolicy):
         weight_file: Optional[Path] = None,
     ) -> None:
         net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, attn_pooling=True)
-        actor = Actor(net, action_space.shape, device=auto_device(net)).to(
-            auto_device(net)
-        )
+        actor = Actor(net, action_space.n, device=auto_device(net)).to(auto_device(net))
 
         net = MetaNet(
             obs_space.shape,
@@ -43,17 +42,13 @@ class PPO(PPOPolicy):
             attn_pooling=True,
         )
         critic = Critic(net, device=auto_device(net)).to(auto_device(net))
-
-        optimizer = torch.optim.Adam(
-            chain_dedup(actor.parameters(), critic.parameters()),
-            lr=lr,
-            weight_decay=weight_decay,
-        )
+        actor_critic = ActorCritic(actor, critic)
+        optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
         super().__init__(
             actor,
             critic,
-            optimizer,
+            optim,
             torch.distributions.Categorical,
             discount_factor=discount_factor,
             max_grad_norm=max_grad_norm,
@@ -70,6 +65,9 @@ class PPO(PPOPolicy):
         if weight_file is not None:
             set_weight(self, Trainer.get_policy_state_dict(weight_file))
 
+    def __str__(self):
+        return "PPO"
+
 
 class MetaPPO(PPOPolicy):
     def __init__(
@@ -78,7 +76,7 @@ class MetaPPO(PPOPolicy):
         action_space: gym.Space,
         softmax_output: bool = False,
         sigmoid_output: bool = True,
-        hidden_sizes: List[int] = [32, 16, 8],
+        hidden_sizes: List[int] = [64, 64, 64],
         lr: float = 1e-4,
         weight_decay: float = 0.0,
         discount_factor: float = 1.0,
@@ -110,17 +108,13 @@ class MetaPPO(PPOPolicy):
             attn_pooling=True,
         )
         critic = MetaCritic(net, device=auto_device(net)).to(auto_device(net))
-
-        optimizer = torch.optim.Adam(
-            chain_dedup(actor.parameters(), critic.parameters()),
-            lr=lr,
-            weight_decay=weight_decay,
-        )
+        actor_critic = ActorCritic(actor, critic)
+        optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
         super().__init__(
             actor,
             critic,
-            optimizer,
+            optim,
             torch.distributions.Bernoulli,
             discount_factor=discount_factor,
             max_grad_norm=max_grad_norm,
@@ -166,3 +160,6 @@ class MetaPPO(PPOPolicy):
         else:
             act = dist.sample()
         return Batch(logits=logits, act=act, state=hidden, dist=dist)
+
+    def __str__(self):
+        return "MetaPPO"

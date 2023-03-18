@@ -10,12 +10,12 @@ from tianshou.exploration import GaussianNoise
 from tianshou.policy import DDPGPolicy
 
 
-class TemporalDDPG(DDPGPolicy):
+class MetaDDPG(DDPGPolicy):
     def __init__(
         self,
         obs_space: gym.Space,
         action_space: gym.Space,
-        hidden_sizes: List[int] = [32, 16, 8],
+        hidden_sizes: List[int] = [64, 64, 64],
         reward_normalization: bool = False,
         n_step: int = 3,
         gamma: float = 0.99,
@@ -57,3 +57,6 @@ class TemporalDDPG(DDPGPolicy):
 
         if weight_file is not None:
             set_weight(self, Trainer.get_policy_state_dict(weight_file))
+
+    def __str__(self):
+        return "MetaDDPG"
