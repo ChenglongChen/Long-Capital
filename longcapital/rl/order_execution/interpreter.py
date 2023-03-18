@@ -23,7 +23,7 @@ class TradeStrategyStateInterpreter(StateInterpreter[TradeStrategyState, np.ndar
         if state.feature is None:
             feature = self.empty
         else:
-            feature = state.feature.values
+            feature = state.feature["feature"].values
 
         # padding
         if feature.shape[0] < self.stock_num:

@@ -4,7 +4,7 @@ from typing import Any, List, Optional, Tuple, Union
 
 import pandas as pd
 import torch.nn.functional as F  # noqa
-from longcapital.rl.order_execution.aux_info import ImitationSignalCollector
+from longcapital.rl.order_execution.aux_info import ImitationLabelCollector
 from longcapital.rl.order_execution.buffer import FeatureBuffer
 from longcapital.rl.order_execution.interpreter import (
     DirectSelectionActionInterpreter,
@@ -46,7 +46,8 @@ class BaseTradeStrategy(BaseStrategy):
     feature_buffer: FeatureBuffer
     position_feature_cols: List
     signal: Any
-    signal_key: str
+    signal_key: str = "signal"
+    imitation_label_key: str = "label"
 
     def action(
         self,
@@ -218,6 +219,7 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         n_drop=None,
         checkpoint_path=None,
         signal_key="signal",
+        imitation_label_key="label",
         policy_cls=discrete.PPO,
         feature_n_step=1,
         position_feature_cols=["count_day"],
@@ -237,8 +239,8 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         self.baseline_action_interpreter = TopkDropoutStrategyActionInterpreter(
             topk=topk, n_drop=n_drop, baseline=True
         )
-        self.aux_info_collector = ImitationSignalCollector(
-            stock_num=stock_num, signal_key=signal_key
+        self.aux_info_collector = ImitationLabelCollector(
+            stock_num=stock_num, label_key=imitation_label_key
         )
         self.policy = policy_cls(
             obs_space=self.state_interpreter.observation_space,
@@ -279,6 +281,7 @@ class TopkDropoutSignalStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         topk,
         n_drop,
         signal_key="signal",
+        imitation_label_key="label",
         policy_cls=continuous.MetaPPO,
         feature_n_step=1,
         position_feature_cols=["count_day"],
@@ -299,8 +302,8 @@ class TopkDropoutSignalStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         self.baseline_action_interpreter = TopkDropoutSignalStrategyActionInterpreter(
             stock_num=stock_num, signal_key=signal_key, baseline=True
         )
-        self.aux_info_collector = ImitationSignalCollector(
-            stock_num=stock_num, signal_key=signal_key
+        self.aux_info_collector = ImitationLabelCollector(
+            stock_num=stock_num, label_key=imitation_label_key
         )
         self.policy = policy_cls(
             obs_space=self.state_interpreter.observation_space,
@@ -348,6 +351,7 @@ class TopkDropoutSelectionStrategy(TopkDropoutSignalStrategy):
         topk,
         n_drop,
         signal_key="signal",
+        imitation_label_key="label",
         policy_cls=discrete.PPO,
         feature_n_step=1,
         position_feature_cols=["count_day"],
@@ -376,8 +380,8 @@ class TopkDropoutSelectionStrategy(TopkDropoutSignalStrategy):
                 baseline=True,
             )
         )
-        self.aux_info_collector = ImitationSignalCollector(
-            stock_num=stock_num, signal_key=signal_key
+        self.aux_info_collector = ImitationLabelCollector(
+            stock_num=stock_num, label_key=imitation_label_key
         )
         self.policy = policy_cls(
             obs_space=self.state_interpreter.observation_space,
@@ -401,6 +405,7 @@ class TopkDropoutDynamicStrategy(TopkDropoutSignalStrategy):
         topk,
         n_drop,
         signal_key="signal",
+        imitation_label_key="label",
         policy_cls=discrete.MetaPPO,
         feature_n_step=1,
         position_feature_cols=["count_day"],
@@ -427,8 +432,8 @@ class TopkDropoutDynamicStrategy(TopkDropoutSignalStrategy):
             signal_key=signal_key,
             baseline=True,
         )
-        self.aux_info_collector = ImitationSignalCollector(
-            stock_num=stock_num, signal_key=signal_key
+        self.aux_info_collector = ImitationLabelCollector(
+            stock_num=stock_num, label_key=imitation_label_key
         )
         self.policy = policy_cls(
             obs_space=self.state_interpreter.observation_space,
@@ -456,6 +461,7 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
         stock_num,
         topk,
         signal_key="signal",
+        imitation_label_key="label",
         checkpoint_path=None,
         equal_weight=True,
         policy_cls=continuous.MetaPPO,
@@ -487,8 +493,8 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
             equal_weight=equal_weight,
             baseline=True,
         )
-        self.aux_info_collector = ImitationSignalCollector(
-            stock_num=stock_num, signal_key=signal_key
+        self.aux_info_collector = ImitationLabelCollector(
+            stock_num=stock_num, label_key=imitation_label_key
         )
         self.policy = policy_cls(
             obs_space=self.state_interpreter.observation_space,
@@ -558,6 +564,7 @@ class DirectSelectionStrategy(WeightStrategy):
         stock_num,
         checkpoint_path=None,
         signal_key="signal",
+        imitation_label_key="label",
         policy_cls=discrete.MetaPPO,
         feature_n_step=1,
         position_feature_cols=["count_day"],
@@ -578,8 +585,8 @@ class DirectSelectionStrategy(WeightStrategy):
         self.baseline_action_interpreter = DirectSelectionActionInterpreter(
             stock_num=stock_num, baseline=True
         )
-        self.aux_info_collector = ImitationSignalCollector(
-            stock_num=stock_num, signal_key=signal_key
+        self.aux_info_collector = ImitationLabelCollector(
+            stock_num=stock_num, label_key=imitation_label_key
         )
         self.policy = policy_cls(
             obs_space=self.state_interpreter.observation_space,

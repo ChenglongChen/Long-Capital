@@ -10,6 +10,7 @@ from qlib.rl.order_execution.policy import Trainer, auto_device, set_weight
 from tianshou.data import Batch, to_torch
 from tianshou.policy import PPOPolicy
 from tianshou.utils.net.common import ActorCritic
+from torch import nn
 from torch.distributions import Independent, Normal
 
 
@@ -34,9 +35,11 @@ class MetaPPO(PPOPolicy):
         max_batch_size: int = 256,
         deterministic_eval: bool = True,
         max_action: float = 1.0,
+        imitation_label_key: str = "label",
         weight_file: Optional[Path] = None,
     ) -> None:
 
+        self.imitation_label_key = imitation_label_key
         net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
         actor = MetaActorProb(
             net,
@@ -92,12 +95,16 @@ class MetaPPO(PPOPolicy):
             for minibatch in batch.split(batch_size, merge_last=True):
                 self.optim.zero_grad()
                 act = self(minibatch).logits
-                act_target = minibatch.info.aux_info["signal"]
+                act_target = minibatch.info.aux_info[self.imitation_label_key]
                 act_target = to_torch(
                     act_target, dtype=torch.float32, device=act.device
                 )
                 loss = F.mse_loss(act, act_target)
                 loss.backward()
+                if self._grad_norm:  # clip large gradient
+                    nn.utils.clip_grad_norm_(
+                        self._actor_critic.parameters(), max_norm=self._grad_norm
+                    )
                 self.optim.step()
                 losses.append(loss.item())
         return {"loss": losses}
