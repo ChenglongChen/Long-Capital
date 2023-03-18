@@ -118,17 +118,18 @@ class TradeStrategy:
             if k in position:
                 position.pop(k)
         if len(position) == 0:
-            # fixme: add config for features to make sure it's the same during training and trading
             for k in self.position_feature_cols:
                 feature[("feature", k)] = 0
         else:
             position = pd.DataFrame(position).T
+            for k in self.position_feature_cols:
+                if k not in position.columns:
+                    position[k] = 0
             position = position[self.position_feature_cols]
             position.columns = pd.MultiIndex.from_tuples(
                 [("feature", c) for c in position.columns]
             )
             position.index.rename("instrument", inplace=True)
-            # fixme: add config for features to make sure it's the same during training and trading
             feature = pd.merge(feature, position, on="instrument", how="left")
             feature.fillna(0, inplace=True)
         feature[("feature", "position")] = (
