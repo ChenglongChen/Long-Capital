@@ -24,7 +24,6 @@ class TradeStrategySimulator(
         pos_type: str = "Position",
         exchange_kwargs: Any = {},
         verbose: bool = False,
-        skip_nontradable_date: bool = True,
         **kwargs: Any,
     ) -> None:
         super().__init__(initial_state)
@@ -78,7 +77,7 @@ class TradeStrategySimulator(
 
         # move necessary steps forward to the first tradable time
         self.trade_executor.reset(start_time=start_time, end_time=end_time)
-        if skip_nontradable_date:
+        if initial_state.skip_nontradable_start_time:
             trade_len = self.trade_executor.trade_calendar.get_trade_len()
             trade_start_time = start_time
             for trade_step in range(trade_len):

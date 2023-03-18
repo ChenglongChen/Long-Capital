@@ -100,22 +100,19 @@ class BaseTradeStrategy(BaseStrategy):
             for k in self.position_feature_cols:
                 feature[("feature", k)] = 0
         else:
-            position = pd.DataFrame(position).T
+            position_df = pd.DataFrame(position).T
             for k in self.position_feature_cols:
-                if k not in position.columns:
-                    position[k] = 0
-            position = position[self.position_feature_cols]
-            position.columns = pd.MultiIndex.from_tuples(
-                [("feature", c) for c in position.columns]
+                if k not in position_df.columns:
+                    position_df[k] = 0
+            position_df = position_df[self.position_feature_cols]
+            position_df.columns = pd.MultiIndex.from_tuples(
+                [("feature", c) for c in position_df.columns]
             )
-            position.index.rename("instrument", inplace=True)
-            feature = pd.merge(feature, position, on="instrument", how="left")
+            position_df.index.rename("instrument", inplace=True)
+            feature = pd.merge(feature, position_df, on="instrument", how="left")
             feature.fillna(0, inplace=True)
         feature[("feature", "position")] = (
             feature[("feature", "count_day")] > 0
-        ).astype(float)
-        feature[("feature", "unhold")] = (
-            feature[("feature", "count_day")] == 0
         ).astype(float)
 
         # sort to make sure the ranking distribution is similar across different dates
