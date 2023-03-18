@@ -19,4 +19,5 @@ class TradeStrategyState(NamedTuple):
 class TradeStrategyInitiateState(NamedTuple):
     start_time: str
     end_time: str
-    sample_date: bool
+    sample_date: bool = False
+    skip_nontradable_start_time: bool = False
