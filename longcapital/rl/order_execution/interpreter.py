@@ -206,7 +206,9 @@ class WeightStrategyActionInterpreter(
         return WeightStrategyAction(target_weight_position=target_weight_position)
 
 
-class TopkActionInterpreter(ActionInterpreter[TradeStrategyState, np.ndarray, Dict]):
+class DirectSelectionActionInterpreter(
+    ActionInterpreter[TradeStrategyState, np.ndarray, Dict]
+):
     def __init__(self, stock_num, baseline=False, **kwargs) -> None:
         self.stock_num = stock_num
         self.baseline = baseline
