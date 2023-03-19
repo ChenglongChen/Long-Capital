@@ -47,7 +47,7 @@ class ExecutionInformationRatioAndExcessReturnReward(Reward[TradeStrategyState])
 class ExecutionInformationRatioReward(ExecutionInformationRatioAndExcessReturnReward):
     def __init__(self, scale=1.0):
         super(ExecutionInformationRatioReward, self).__init__(
-            scale=scale, ir_weight=1.0, rr_weight=0.0
+            scale=scale, ir_weight=1.0, rr_weight=0.0, excess_return=True
         )
 
     def __str__(self):
@@ -67,7 +67,7 @@ class ExecutionSharpRatioReward(ExecutionInformationRatioAndExcessReturnReward):
 class ExecutionExcessReturnReward(ExecutionInformationRatioAndExcessReturnReward):
     def __init__(self, scale=1.0):
         super(ExecutionExcessReturnReward, self).__init__(
-            scale=scale, ir_weight=0.0, rr_weight=1.0
+            scale=scale, ir_weight=0.0, rr_weight=1.0, excess_return=True
         )
 
     def __str__(self):
@@ -121,7 +121,7 @@ class ExecutionExcessMeanVarianceReward(Reward[TradeStrategyState]):
 
 
 class ExecutionMeanVarianceReward(ExecutionExcessMeanVarianceReward):
-    """Similar as ExecutionExcessMeanVarianceReward but use ExcessReturn in reward."""
+    """Similar as ExecutionExcessMeanVarianceReward but use Return in reward."""
 
     def __init__(self, scale=1.0, k=1e-4):
         super(ExecutionMeanVarianceReward, self).__init__(
