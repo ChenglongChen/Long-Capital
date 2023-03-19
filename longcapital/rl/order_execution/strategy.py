@@ -32,12 +32,6 @@ from tianshou.policy import BasePolicy
 
 
 class BaseTradeStrategy(BaseStrategy):
-    # NOTE:
-    # - for avoiding recursive import
-    # - typing annotations is not reliable
-    from qlib.backtest.executor import BaseExecutor  # pylint: disable=C0415
-
-    executor: BaseExecutor
     state_interpreter: StateInterpreter
     action_interpreter: ActionInterpreter
     baseline_action_interpreter: ActionInterpreter
@@ -96,28 +90,13 @@ class BaseTradeStrategy(BaseStrategy):
         if feature is None:
             return None
 
-        position = copy.deepcopy(self.executor.trade_account.current_position.position)
-        for k in ["cash", "now_account_value"]:
-            if k in position:
-                position.pop(k)
-        if len(position) == 0:
+        position_df = self.get_position_df(rename_cols=True)
+        if position_df is None:
             for k in self.position_feature_cols:
                 feature[("feature", k)] = 0
         else:
-            position_df = pd.DataFrame(position).T
-            for k in self.position_feature_cols:
-                if k not in position_df.columns:
-                    position_df[k] = 0
-            position_df = position_df[self.position_feature_cols]
-            position_df.columns = pd.MultiIndex.from_tuples(
-                [("feature", c) for c in position_df.columns]
-            )
-            position_df.index.rename("instrument", inplace=True)
             feature = pd.merge(feature, position_df, on="instrument", how="left")
             feature.fillna(0, inplace=True)
-        feature[("feature", "position")] = (
-            feature[("feature", "count_day")] > 0
-        ).astype(float)
 
         # sort to make sure the ranking distribution is similar across different dates
         feature.sort_values(
@@ -169,13 +148,8 @@ class BaseTradeStrategy(BaseStrategy):
             action_dfs.append(action_df)
 
         # reformat trade decision into dataframe
-        position = copy.deepcopy(self.executor.trade_account.current_position.position)
-        position.pop("cash")
-        position.pop("now_account_value")
-        position_df = pd.DataFrame(position).T.reset_index()
-        position_df.rename(columns={"index": "instrument"}, inplace=True)
-        position_df["count_day"] = position_df["count_day"] + 1
-        position_df["position"] = 1
+        position_df = self.get_position_df()
+        position_df.reset_index(inplace=True)
 
         decision_df = pd.merge(
             pd.merge(action_dfs[0], action_dfs[1], on="instrument", how="left"),
@@ -191,14 +165,33 @@ class BaseTradeStrategy(BaseStrategy):
             "signal",
             "direction_baseline",
             "signal_baseline",
-            "position",
-            "count_day",
-            "amount",
-            "price",
-        ]
+        ] + self.position_feature_cols
         decision_df = decision_df[cols]
         decision_df["pred_start_time"] = pred_start_time
         return decision_df
+
+    def get_position_df(self, rename_cols=False) -> Optional[pd.DataFrame]:
+        """[amount, price, weight, count_day, position]"""
+        current_position = copy.deepcopy(self.trade_position)
+        current_position.update_weight_all()
+        position = current_position.position
+        for k in ["cash", "now_account_value"]:
+            if k in position:
+                position.pop(k)
+        if len(position):
+            position_df = pd.DataFrame(position).T
+            position_df.index.rename("instrument", inplace=True)
+            position_df["position"] = 1
+            for k in self.position_feature_cols:
+                if k not in position_df.columns:
+                    position_df[k] = 0
+            position_df = position_df[self.position_feature_cols]
+            if rename_cols:
+                position_df.columns = pd.MultiIndex.from_tuples(
+                    [("feature", c) for c in position_df.columns]
+                )
+            return position_df
+        return None
 
     def get_trade_start_end_time(self) -> Tuple[pd.Timestamp, pd.Timestamp]:
         trade_step = self.trade_calendar.get_trade_step()
@@ -404,6 +397,7 @@ class TopkDropoutDynamicStrategy(TopkDropoutSignalStrategy):
         stock_num,
         topk,
         n_drop,
+        hold_thresh,
         signal_key="signal",
         imitation_label_key="label",
         policy_cls=discrete.MetaPPO,
@@ -423,11 +417,16 @@ class TopkDropoutDynamicStrategy(TopkDropoutSignalStrategy):
             dim=dim * feature_n_step, stock_num=stock_num
         )
         self.action_interpreter = TopkDropoutDynamicStrategyActionInterpreter(
-            topk=topk, n_drop=n_drop, stock_num=stock_num, signal_key=signal_key
+            topk=topk,
+            n_drop=n_drop,
+            hold_thresh=hold_thresh,
+            stock_num=stock_num,
+            signal_key=signal_key,
         )
         self.baseline_action_interpreter = TopkDropoutDynamicStrategyActionInterpreter(
             topk=topk,
             n_drop=n_drop,
+            hold_thresh=hold_thresh,
             stock_num=stock_num,
             signal_key=signal_key,
             baseline=True,
@@ -451,6 +450,7 @@ class TopkDropoutDynamicStrategy(TopkDropoutSignalStrategy):
         super(TopkDropoutDynamicStrategy, self).prepare_trading_with_action(action)
         self.topk = action.topk
         self.n_drop = action.n_drop
+        self.hold_thresh = action.hold_thresh
 
 
 class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
