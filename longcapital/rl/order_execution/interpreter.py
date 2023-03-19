@@ -23,7 +23,7 @@ class TradeStrategyStateInterpreter(StateInterpreter[TradeStrategyState, np.ndar
         if state.feature is None:
             feature = self.empty
         else:
-            feature = state.feature.values
+            feature = state.feature["feature"].values
 
         # padding
         if feature.shape[0] < self.stock_num:
@@ -42,6 +42,7 @@ class TopkDropoutStrategyAction(NamedTuple):
     signal: Union[pd.DataFrame, None] = None
     topk: int = 0
     n_drop: int = 0
+    hold_thresh: int = 1
 
 
 class TopkDropoutStrategyActionInterpreter(
@@ -146,6 +147,7 @@ class TopkDropoutDynamicStrategyActionInterpreter(
         self,
         topk: int,
         n_drop: int,
+        hold_thresh: int,
         stock_num: int,
         signal_key="signal",
         baseline=False,
@@ -153,6 +155,7 @@ class TopkDropoutDynamicStrategyActionInterpreter(
     ) -> None:
         self.topk = topk
         self.n_drop = n_drop
+        self.hold_thresh = hold_thresh
         self.signal_key = signal_key
         self.stock_num = stock_num
         self.baseline = baseline
@@ -171,6 +174,7 @@ class TopkDropoutDynamicStrategyActionInterpreter(
 
         topk = self.topk
         n_drop = self.n_drop
+        hold_thresh = self.hold_thresh
         signal = state.feature[("feature", self.signal_key)][: self.stock_num].copy()
         if not self.baseline:
             hold = np.zeros(self.stock_num, dtype=int)
@@ -183,8 +187,11 @@ class TopkDropoutDynamicStrategyActionInterpreter(
                 n_drop = int((1 - hold[:num_position]).sum())
             else:
                 n_drop = 0
+            hold_thresh = 1
 
-        return TopkDropoutStrategyAction(signal=signal, topk=topk, n_drop=n_drop)
+        return TopkDropoutStrategyAction(
+            signal=signal, topk=topk, n_drop=n_drop, hold_thresh=hold_thresh
+        )
 
 
 class WeightStrategyAction(NamedTuple):

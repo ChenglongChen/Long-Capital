@@ -1,13 +1,16 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import gym
 import torch
+import torch.nn.functional as F  # noqa
 from longcapital.rl.utils.net.common import MetaNet
 from longcapital.rl.utils.net.continuous import MetaActorProb, MetaCritic
 from qlib.rl.order_execution.policy import Trainer, auto_device, set_weight
+from tianshou.data import Batch, to_torch
 from tianshou.policy import PPOPolicy
 from tianshou.utils.net.common import ActorCritic
+from torch import nn
 from torch.distributions import Independent, Normal
 
 
@@ -32,9 +35,11 @@ class MetaPPO(PPOPolicy):
         max_batch_size: int = 256,
         deterministic_eval: bool = True,
         max_action: float = 1.0,
+        imitation_label_key: str = "label",
         weight_file: Optional[Path] = None,
     ) -> None:
 
+        self.imitation_label_key = imitation_label_key
         net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
         actor = MetaActorProb(
             net,
@@ -81,6 +86,42 @@ class MetaPPO(PPOPolicy):
         )
         if weight_file is not None:
             set_weight(self, Trainer.get_policy_state_dict(weight_file))
+
+    def learn_imitation(
+        self, batch: Batch, batch_size: int, repeat: int, **kwargs: Any
+    ) -> Dict[str, List[float]]:
+        losses = []
+        for step in range(repeat):
+            for minibatch in batch.split(batch_size, merge_last=True):
+                self.optim.zero_grad()
+                act = self(minibatch).logits
+                act_target = minibatch.info.aux_info[self.imitation_label_key]
+                act_target = to_torch(
+                    act_target, dtype=torch.float32, device=act.device
+                )
+                loss = F.mse_loss(act, act_target)
+                loss.backward()
+                if self._grad_norm:  # clip large gradient
+                    nn.utils.clip_grad_norm_(
+                        self._actor_critic.parameters(), max_norm=self._grad_norm
+                    )
+                self.optim.step()
+                losses.append(loss.item())
+        return {"loss": losses}
+
+    def learn(  # type: ignore
+        self, batch: Batch, batch_size: int, repeat: int, **kwargs: Any
+    ) -> Dict[str, List[float]]:
+        current_iter = kwargs.get("current_iter")
+        imitation_iter = kwargs.get("imitation_iter")
+        if (
+            (current_iter is not None)
+            and (imitation_iter is not None)
+            and (current_iter < imitation_iter)
+        ):
+            return self.learn_imitation(batch, batch_size, repeat, **kwargs)
+        else:
+            return super(MetaPPO, self).learn(batch, batch_size, repeat, **kwargs)
 
     def __str__(self):
         return "MetaPPO"
