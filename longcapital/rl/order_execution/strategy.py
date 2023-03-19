@@ -437,6 +437,7 @@ class TopkDropoutDynamicStrategy(TopkDropoutSignalStrategy):
         self.policy = policy_cls(
             obs_space=self.state_interpreter.observation_space,
             action_space=self.action_interpreter.action_space,
+            imitation_label_key=imitation_label_key,
             weight_file=Path(checkpoint_path) if checkpoint_path else None,
         )
         if checkpoint_path:
