@@ -9,6 +9,7 @@ from longcapital.rl.order_execution.buffer import FeatureBuffer
 from longcapital.rl.order_execution.interpreter import (
     DirectSelectionActionInterpreter,
     TopkDropoutDynamicStrategyActionInterpreter,
+    TopkDropoutRerankStrategyActionInterpreter,
     TopkDropoutSelectionStrategyActionInterpreter,
     TopkDropoutSignalStrategyActionInterpreter,
     TopkDropoutStrategyAction,
@@ -159,6 +160,7 @@ class BaseTradeStrategy(BaseStrategy):
         )
 
         decision_df = decision_df.sort_values(["position", "signal"], ascending=False)
+        decision_df.reset_index(drop=True, inplace=True)
         cols = [
             "instrument",
             "direction",
@@ -401,6 +403,11 @@ class TopkDropoutDynamicStrategy(TopkDropoutSignalStrategy):
         signal_key="signal",
         imitation_label_key="label",
         policy_cls=discrete.MetaPPO,
+        unbounded=True,
+        conditioned_sigma=False,
+        max_action=1.0,
+        sigma_min=1e-8,
+        sigma_max=0.05,
         feature_n_step=1,
         position_feature_cols=["count_day"],
         checkpoint_path=None,
@@ -437,6 +444,12 @@ class TopkDropoutDynamicStrategy(TopkDropoutSignalStrategy):
         self.policy = policy_cls(
             obs_space=self.state_interpreter.observation_space,
             action_space=self.action_interpreter.action_space,
+            unbounded=unbounded,
+            conditioned_sigma=conditioned_sigma,
+            max_action=max_action,
+            sigma_min=sigma_min,
+            sigma_max=sigma_max,
+            imitation_label_key=imitation_label_key,
             weight_file=Path(checkpoint_path) if checkpoint_path else None,
         )
         if checkpoint_path:
@@ -448,6 +461,70 @@ class TopkDropoutDynamicStrategy(TopkDropoutSignalStrategy):
 
     def prepare_trading_with_action(self, action: TopkDropoutStrategyAction):
         super(TopkDropoutDynamicStrategy, self).prepare_trading_with_action(action)
+        self.topk = action.topk
+        self.n_drop = action.n_drop
+        self.hold_thresh = action.hold_thresh
+
+
+class TopkDropoutRerankStrategy(TopkDropoutSignalStrategy):
+    def __init__(
+        self,
+        *,
+        dim,
+        stock_num,
+        topk,
+        n_drop,
+        hold_thresh,
+        signal_key="signal",
+        imitation_label_key="label",
+        policy_cls=discrete.MetaPPO,
+        feature_n_step=1,
+        position_feature_cols=["count_day"],
+        checkpoint_path=None,
+        **kwargs,
+    ):
+        super(TopkDropoutSignalStrategy, self).__init__(
+            topk=topk, n_drop=n_drop, **kwargs
+        )
+        self.feature_buffer = FeatureBuffer(size=feature_n_step)
+        self.position_feature_cols = position_feature_cols
+        self.signal_key = signal_key
+        self.policy_cls = policy_cls
+        self.state_interpreter = TradeStrategyStateInterpreter(
+            dim=dim * feature_n_step, stock_num=stock_num
+        )
+        self.action_interpreter = TopkDropoutRerankStrategyActionInterpreter(
+            topk=topk,
+            n_drop=n_drop,
+            hold_thresh=hold_thresh,
+            stock_num=stock_num,
+            signal_key=signal_key,
+        )
+        self.baseline_action_interpreter = TopkDropoutRerankStrategyActionInterpreter(
+            topk=topk,
+            n_drop=n_drop,
+            hold_thresh=hold_thresh,
+            stock_num=stock_num,
+            signal_key=signal_key,
+            baseline=True,
+        )
+        self.aux_info_collector = ImitationLabelCollector(
+            stock_num=stock_num, label_key=imitation_label_key
+        )
+        self.policy = policy_cls(
+            obs_space=self.state_interpreter.observation_space,
+            action_space=self.action_interpreter.action_space,
+            weight_file=Path(checkpoint_path) if checkpoint_path else None,
+        )
+        if checkpoint_path:
+            self.policy.eval()
+        self.pred_score = None
+
+    def __str__(self):
+        return "TopkDropoutRerankStrategy"
+
+    def prepare_trading_with_action(self, action: TopkDropoutStrategyAction):
+        super(TopkDropoutRerankStrategy, self).prepare_trading_with_action(action)
         self.topk = action.topk
         self.n_drop = action.n_drop
         self.hold_thresh = action.hold_thresh

@@ -177,14 +177,65 @@ class TopkDropoutDynamicStrategyActionInterpreter(
         hold_thresh = self.hold_thresh
         signal = state.feature[("feature", self.signal_key)][: self.stock_num].copy()
         if not self.baseline:
-            hold = np.zeros(self.stock_num, dtype=int)
+            signal.iloc[:] = action
             index = np.argpartition(-action, topk)[:topk]
-            hold[index] = 1
-            signal.iloc[:] = hold
             position = state.feature[("feature", "position")][: self.stock_num].copy()
             num_position = int(position.sum())
             if num_position > 0:
-                n_drop = int((1 - hold[:num_position]).sum())
+                hold = int((index < num_position).sum())
+                n_drop = num_position - hold
+            else:
+                n_drop = 0
+            hold_thresh = 1
+
+        return TopkDropoutStrategyAction(
+            signal=signal, topk=topk, n_drop=n_drop, hold_thresh=hold_thresh
+        )
+
+
+class TopkDropoutRerankStrategyActionInterpreter(
+    ActionInterpreter[TradeStrategyState, int, TopkDropoutStrategyAction]
+):
+    def __init__(
+        self,
+        topk: int,
+        n_drop: int,
+        hold_thresh: int,
+        stock_num: int,
+        signal_key="signal",
+        baseline=False,
+        **kwargs,
+    ) -> None:
+        self.topk = topk
+        self.n_drop = n_drop
+        self.hold_thresh = hold_thresh
+        self.signal_key = signal_key
+        self.stock_num = stock_num
+        self.baseline = baseline
+
+    @property
+    def action_space(self) -> spaces.MultiDiscrete:
+        return spaces.MultiDiscrete([self.stock_num + 1] * self.stock_num)
+
+    def interpret(
+        self, state: TradeStrategyState, action: torch.Tensor
+    ) -> TopkDropoutStrategyAction:
+
+        if isinstance(action, torch.Tensor):
+            action = action.squeeze().detach().numpy()
+
+        topk = self.topk
+        n_drop = self.n_drop
+        hold_thresh = self.hold_thresh
+        signal = state.feature[("feature", self.signal_key)][: self.stock_num].copy()
+        if not self.baseline:
+            rerank_index = action
+            signal.iloc[rerank_index] = np.arange(self.stock_num, 0, -1)
+            position = state.feature[("feature", "position")][: self.stock_num].copy()
+            num_position = int(position.sum())
+            if num_position > 0:
+                hold = int((rerank_index[:topk] < num_position).sum())
+                n_drop = num_position - hold
             else:
                 n_drop = 0
             hold_thresh = 1
