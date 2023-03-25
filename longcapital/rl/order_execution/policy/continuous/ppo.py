@@ -35,6 +35,10 @@ class MetaPPO(PPOPolicy):
         max_batch_size: int = 256,
         deterministic_eval: bool = True,
         max_action: float = 1.0,
+        unbounded: bool = False,
+        conditioned_sigma: bool = True,
+        sigma_min: float = 1e-8,
+        sigma_max: float = 0.05,
         imitation_label_key: str = "label",
         weight_file: Optional[Path] = None,
     ) -> None:
@@ -45,6 +49,10 @@ class MetaPPO(PPOPolicy):
             net,
             action_space.shape,
             max_action=max_action,
+            unbounded=unbounded,
+            conditioned_sigma=conditioned_sigma,
+            sigma_min=sigma_min,
+            sigma_max=sigma_max,
             device=auto_device(net),
         ).to(auto_device(net))
 
@@ -94,7 +102,7 @@ class MetaPPO(PPOPolicy):
         for step in range(repeat):
             for minibatch in batch.split(batch_size, merge_last=True):
                 self.optim.zero_grad()
-                act = self(minibatch).logits
+                act = self(minibatch).logits[0]  # mu
                 act_target = minibatch.info.aux_info[self.imitation_label_key]
                 act_target = to_torch(
                     act_target, dtype=torch.float32, device=act.device

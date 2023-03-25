@@ -123,3 +123,4 @@ log/
 *checkpoint*
 *.tar.gz*
 records*
+data/trade

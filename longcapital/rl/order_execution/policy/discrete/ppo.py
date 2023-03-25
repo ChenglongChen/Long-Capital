@@ -13,6 +13,24 @@ from tianshou.utils.net.common import ActorCritic
 from tianshou.utils.net.discrete import Actor, Critic
 
 
+class Categorical(torch.distributions.Categorical):
+    """Sample ranking index according to Softmax distribution"""
+
+    def __init__(self, probs=None, logits=None, validate_args=None):
+        super().__init__(probs, logits, validate_args)
+        self._event_shape = (self._param.size()[-1],)
+
+    def sample(self, sample_shape=torch.Size(), replacement=False):
+        probs_2d = self.probs.reshape(-1, self._num_events)
+        samples_2d = torch.multinomial(probs_2d, self._num_events, replacement)
+        return samples_2d
+
+    def log_prob(self, value):
+        if self._validate_args:
+            self._validate_sample(value)
+        return self.logits.gather(-1, value.long())
+
+
 class PPO(PPOPolicy):
     def __init__(
         self,
@@ -74,8 +92,7 @@ class MetaPPO(PPOPolicy):
         self,
         obs_space: gym.Space,
         action_space: gym.Space,
-        softmax_output: bool = False,
-        sigmoid_output: bool = True,
+        softmax_output: bool = True,
         hidden_sizes: List[int] = [32, 16, 8],
         lr: float = 1e-4,
         weight_decay: float = 0.0,
@@ -90,14 +107,11 @@ class MetaPPO(PPOPolicy):
         deterministic_eval: bool = True,
         weight_file: Optional[Path] = None,
     ) -> None:
-        assert not (softmax_output and sigmoid_output)
-
         net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
         actor = MetaActor(
             net,
             action_space.shape,
             softmax_output=softmax_output,
-            sigmoid_output=sigmoid_output,
             device=auto_device(net),
         ).to(auto_device(net))
 
@@ -111,11 +125,16 @@ class MetaPPO(PPOPolicy):
         actor_critic = ActorCritic(actor, critic)
         optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
+        # replace DiagGuassian with Independent(Normal) which is equivalent
+        # pass *logits to be consistent with policy.forward
+        def dist(*logits) -> torch.distributions.Distribution:
+            return torch.distributions.Independent(Categorical(*logits), 1)
+
         super().__init__(
             actor,
             critic,
             optim,
-            torch.distributions.Bernoulli,
+            dist,
             discount_factor=discount_factor,
             max_grad_norm=max_grad_norm,
             reward_normalization=reward_normalization,
@@ -154,7 +173,7 @@ class MetaPPO(PPOPolicy):
             dist = self.dist_fn(logits)
         if self._deterministic_eval and not self.training:
             if self.action_type == "discrete":
-                act = (logits > 0.5).float()
+                act = torch.argsort(-logits, dim=1)
             elif self.action_type == "continuous":
                 act = logits[0]
         else:

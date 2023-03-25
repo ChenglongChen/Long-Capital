@@ -92,6 +92,8 @@ class TradeStrategySimulator(
             start_time = trade_start_time
             end_time = self.trade_executor.trade_calendar.end_time
             self.trade_executor.reset(start_time=start_time, end_time=end_time)
+        start_time = self.trade_executor.trade_calendar.start_time
+        end_time = self.trade_executor.trade_calendar.end_time
         print(f"start_time: {start_time}, end_time: {end_time}")
 
         # reset for trade_strategy

@@ -6,9 +6,6 @@ from tianshou.utils.net.common import MLP
 from tianshou.utils.net.continuous import Critic
 from torch import nn
 
-SIGMA_MIN = -20
-SIGMA_MAX = 2
-
 
 class MetaActor(nn.Module):
     def __init__(
@@ -82,27 +79,28 @@ class MetaActorProb(nn.Module):
         max_action: float = 1.0,
         device: Union[str, int, torch.device] = "cpu",
         unbounded: bool = False,
-        conditioned_sigma: bool = False,
+        conditioned_sigma: bool = True,
         preprocess_net_output_dim: Optional[int] = None,
+        sigma_min: float = 1e-8,
+        sigma_max: float = 0.05,
     ) -> None:
         super().__init__()
         self.preprocess = preprocess_net
         self.device = device
         self.output_dim = action_shape[0]
         input_dim = getattr(preprocess_net, "output_dim", preprocess_net_output_dim)
-        output_dim = 1
-        self.mu = MLP(
-            input_dim, output_dim, hidden_sizes, device=self.device  # type: ignore
-        )
+        self.mu = MLP(input_dim, 1, hidden_sizes, device=self.device)  # type: ignore
         self._c_sigma = conditioned_sigma
         if conditioned_sigma:
             self.sigma = MLP(
-                input_dim, output_dim, hidden_sizes, device=self.device  # type: ignore
+                input_dim, 1, hidden_sizes, device=self.device  # type: ignore
             )
         else:
-            self.sigma_param = nn.Parameter(torch.zeros(output_dim, 1))
+            self.sigma_param = nn.Parameter(torch.zeros(self.output_dim, 1))
         self._max = max_action
         self._unbounded = unbounded
+        self._sigma_min = sigma_min
+        self._sigma_max = sigma_max
 
     def forward(
         self,
@@ -115,14 +113,18 @@ class MetaActorProb(nn.Module):
         bsz, ch, d = logits.size(0), logits.size(1), logits.size(2)
         logits = logits.reshape(-1, d)
         mu = self.mu(logits)
+        mu = mu.view(bsz, ch)
         if not self._unbounded:
             mu = self._max * torch.tanh(mu)
         if self._c_sigma:
-            sigma = torch.clamp(self.sigma(logits), min=SIGMA_MIN, max=SIGMA_MAX).exp()
+            sigma = torch.clamp(
+                self.sigma(logits),
+                min=np.log(self._sigma_min),
+                max=np.log(self._sigma_max),
+            ).exp()
+            sigma = sigma.view(bsz, ch)
         else:
             shape = [1] * len(mu.shape)
             shape[1] = -1
             sigma = (self.sigma_param.view(shape) + torch.zeros_like(mu)).exp()
-        mu = mu.view(bsz, ch)
-        sigma = sigma.view(bsz, ch)
         return (mu, sigma), state

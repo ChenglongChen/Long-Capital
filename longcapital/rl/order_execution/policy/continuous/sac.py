@@ -17,7 +17,7 @@ class MetaSAC(SACPolicy):
         action_space: gym.Space,
         hidden_sizes: List[int] = [32, 16, 8],
         n_step: int = 1,
-        gamma: float = 0.99,
+        gamma: float = 1.0,
         tau: float = 0.005,
         actor_lr: float = 1e-3,
         critic_lr: float = 1e-3,
@@ -27,8 +27,12 @@ class MetaSAC(SACPolicy):
         alpha: float = 0.2,
         unbounded: bool = True,
         conditioned_sigma: bool = True,
+        sigma_min: float = 1e-8,
+        sigma_max: float = 0.05,
         weight_file: Optional[Path] = None,
+        imitation_label_key: str = "label",
     ) -> None:
+        self.imitation_label_key = imitation_label_key
         net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
         actor = MetaActorProb(
             net,
@@ -36,6 +40,8 @@ class MetaSAC(SACPolicy):
             max_action=max_action,
             unbounded=unbounded,
             conditioned_sigma=conditioned_sigma,
+            sigma_min=sigma_min,
+            sigma_max=sigma_max,
             device=auto_device(net),
         ).to(auto_device(net))
         actor_optim = torch.optim.Adam(actor.parameters(), lr=actor_lr)
