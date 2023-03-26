@@ -13,24 +13,6 @@ from tianshou.utils.net.common import ActorCritic
 from tianshou.utils.net.discrete import Actor, Critic
 
 
-class Categorical(torch.distributions.Categorical):
-    """Sample ranking index according to Softmax distribution"""
-
-    def __init__(self, probs=None, logits=None, validate_args=None):
-        super().__init__(probs, logits, validate_args)
-        self._event_shape = (self._param.size()[-1],)
-
-    def sample(self, sample_shape=torch.Size(), replacement=False):
-        probs_2d = self.probs.reshape(-1, self._num_events)
-        samples_2d = torch.multinomial(probs_2d, self._num_events, replacement)
-        return samples_2d
-
-    def log_prob(self, value):
-        if self._validate_args:
-            self._validate_sample(value)
-        return self.logits.gather(-1, value.long())
-
-
 class PPO(PPOPolicy):
     def __init__(
         self,
@@ -38,14 +20,19 @@ class PPO(PPOPolicy):
         action_space: gym.Space,
         hidden_sizes: List[int] = [32, 16, 8],
         lr: float = 1e-4,
-        weight_decay: float = 0.0,
-        discount_factor: float = 1.0,
+        discount_factor: float = 0.95,
         max_grad_norm: float = 100.0,
         reward_normalization: bool = True,
+        advantage_normalization: bool = True,
+        recompute_advantage: bool = False,
+        dual_clip: float = None,
         eps_clip: float = 0.3,
         value_clip: bool = True,
-        vf_coef: float = 1.0,
+        vf_coef: float = 0.5,
+        ent_coef: float = 0.01,
         gae_lambda: float = 1.0,
+        action_scaling: bool = False,
+        action_bound_method: str = "",
         max_batch_size: int = 256,
         deterministic_eval: bool = True,
         weight_file: Optional[Path] = None,
@@ -71,14 +58,20 @@ class PPO(PPOPolicy):
             discount_factor=discount_factor,
             max_grad_norm=max_grad_norm,
             reward_normalization=reward_normalization,
+            advantage_normalization=advantage_normalization,
+            recompute_advantage=recompute_advantage,
+            dual_clip=dual_clip,
             eps_clip=eps_clip,
             value_clip=value_clip,
             vf_coef=vf_coef,
+            ent_coef=ent_coef,
             gae_lambda=gae_lambda,
             max_batchsize=max_batch_size,
             deterministic_eval=deterministic_eval,
             observation_space=obs_space,
             action_space=action_space,
+            action_scaling=action_scaling,
+            action_bound_method=action_bound_method,
         )
         if weight_file is not None:
             set_weight(self, Trainer.get_policy_state_dict(weight_file))
@@ -95,14 +88,19 @@ class MetaPPO(PPOPolicy):
         softmax_output: bool = True,
         hidden_sizes: List[int] = [32, 16, 8],
         lr: float = 1e-4,
-        weight_decay: float = 0.0,
-        discount_factor: float = 1.0,
+        discount_factor: float = 0.95,
         max_grad_norm: float = 100.0,
         reward_normalization: bool = True,
+        advantage_normalization: bool = True,
+        recompute_advantage: bool = False,
+        dual_clip: float = None,
         eps_clip: float = 0.3,
         value_clip: bool = True,
-        vf_coef: float = 1.0,
+        vf_coef: float = 0.5,
+        ent_coef: float = 0.01,
         gae_lambda: float = 1.0,
+        action_scaling: bool = False,
+        action_bound_method: str = "",
         max_batch_size: int = 256,
         deterministic_eval: bool = True,
         weight_file: Optional[Path] = None,
@@ -110,7 +108,7 @@ class MetaPPO(PPOPolicy):
         net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
         actor = MetaActor(
             net,
-            action_space.shape,
+            [action_space.n],
             softmax_output=softmax_output,
             device=auto_device(net),
         ).to(auto_device(net))
@@ -125,27 +123,28 @@ class MetaPPO(PPOPolicy):
         actor_critic = ActorCritic(actor, critic)
         optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
-        # replace DiagGuassian with Independent(Normal) which is equivalent
-        # pass *logits to be consistent with policy.forward
-        def dist(*logits) -> torch.distributions.Distribution:
-            return torch.distributions.Independent(Categorical(*logits), 1)
-
         super().__init__(
             actor,
             critic,
             optim,
-            dist,
+            torch.distributions.Categorical,
             discount_factor=discount_factor,
             max_grad_norm=max_grad_norm,
             reward_normalization=reward_normalization,
+            advantage_normalization=advantage_normalization,
+            recompute_advantage=recompute_advantage,
+            dual_clip=dual_clip,
             eps_clip=eps_clip,
             value_clip=value_clip,
             vf_coef=vf_coef,
+            ent_coef=ent_coef,
             gae_lambda=gae_lambda,
             max_batchsize=max_batch_size,
             deterministic_eval=deterministic_eval,
             observation_space=obs_space,
             action_space=action_space,
+            action_scaling=action_scaling,
+            action_bound_method=action_bound_method,
         )
         if weight_file is not None:
             set_weight(self, Trainer.get_policy_state_dict(weight_file))
@@ -156,26 +155,16 @@ class MetaPPO(PPOPolicy):
         state: Optional[Union[dict, Batch, np.ndarray]] = None,
         **kwargs: Any,
     ) -> Batch:
-        """Compute action over the given batch data.
-        :return: A :class:`~tianshou.data.Batch` which has 4 keys:
-            * ``act`` the action.
-            * ``logits`` the network's raw output.
-            * ``dist`` the action distribution.
-            * ``state`` the hidden state.
-        .. seealso::
-            Please refer to :meth:`~tianshou.policy.BasePolicy.forward` for
-            more detailed explanation.
-        """
         logits, hidden = self.actor(batch.obs, state=state, info=batch.info)
+        selected = torch.Tensor(batch.obs[:, :, -1])
+        mask_value = 0
+        logits = logits * (1 - selected) + mask_value * selected
         if isinstance(logits, tuple):
             dist = self.dist_fn(*logits)
         else:
             dist = self.dist_fn(logits)
         if self._deterministic_eval and not self.training:
-            if self.action_type == "discrete":
-                act = torch.argsort(-logits, dim=1)
-            elif self.action_type == "continuous":
-                act = logits[0]
+            act = logits.argmax(-1)
         else:
             act = dist.sample()
         return Batch(logits=logits, act=act, state=hidden, dist=dist)

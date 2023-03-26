@@ -101,12 +101,13 @@ class TradeStrategySimulator(
         self.trade_strategy.reset_level_infra(self.trade_executor.get_level_infra())
 
     def step(self, action: Any) -> None:
-        trade_decisions = self.trade_strategy.generate_trade_decision(action=action)
-        for _execute_result in self.trade_executor.collect_data(
-            trade_decisions, level=0
-        ):
-            if self.verbose:
-                print("Execution result:", len(_execute_result))
+        if action.ready:
+            trade_decisions = self.trade_strategy.generate_trade_decision(action=action)
+            for _execute_result in self.trade_executor.collect_data(
+                trade_decisions, level=0
+            ):
+                if self.verbose:
+                    print("Execution result:", len(_execute_result))
 
     def get_state(self) -> TradeStrategyState:
         return TradeStrategyState(

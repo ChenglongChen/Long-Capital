@@ -1,13 +1,14 @@
 # Long-Capital: Quant Trading with Microsoft [Qlib](https://github.com/microsoft/qlib)
 
 ## Performance
-|Method| Signal Model | Trading Strategy | IR |
-| :--- | :------- |:------- | :-----------: |
-| [Supervised Learning](examples/sl.ipynb) | LGBM | TopkDropoutStrategy | 1.64627 |
-| [Reinforcement Learning](examples/rl.ipynb)| LGBM | TopkDropoutDynamicStrategy | **2.14316**|
-
-## Learning Curve
-![metappo](fig/metappo.png)
+|Method| Signal Model | Trading Strategy | AR | IR |
+| :--- | :------- |:------- | :-----------: | :-----------: |
+| [Supervised Learning](examples/sl.ipynb) | LGBM | TopkDropoutStrategy | TBD |TBD |
+| [Reinforcement Learning](examples/rl.ipynb) | LGBM | TopkDropoutContinuousRerankStrategy | TBD |TBD |
+| [Reinforcement Learning](examples/rl.ipynb) | LGBM | TopkDropoutContinuousRerankDynamicParamStrategy | TBD |TBD |
+| [Reinforcement Learning](examples/rl.ipynb) | LGBM | TopkDropoutDiscreteDynamicParamStrategy | TBD |TBD |
+| [Reinforcement Learning](examples/rl.ipynb) | LGBM | TopkDropoutDiscreteDynamicSelectionStrategy | TBD |TBD |
+| [Reinforcement Learning](examples/rl.ipynb) | LGBM | TopkDropoutDiscreteRerankDynamicParamStrategy | TBD |TBD |
 
 ## Dependency
 - My fork of [Qlib](https://github.com/microsoft/qlib): https://github.com/ChenglongChen/qlib

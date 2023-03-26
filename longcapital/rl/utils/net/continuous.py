@@ -79,10 +79,10 @@ class MetaActorProb(nn.Module):
         max_action: float = 1.0,
         device: Union[str, int, torch.device] = "cpu",
         unbounded: bool = False,
-        conditioned_sigma: bool = True,
+        conditioned_sigma: bool = False,
         preprocess_net_output_dim: Optional[int] = None,
         sigma_min: float = 1e-8,
-        sigma_max: float = 0.05,
+        sigma_max: float = 1.0,
     ) -> None:
         super().__init__()
         self.preprocess = preprocess_net
@@ -126,5 +126,9 @@ class MetaActorProb(nn.Module):
         else:
             shape = [1] * len(mu.shape)
             shape[1] = -1
-            sigma = (self.sigma_param.view(shape) + torch.zeros_like(mu)).exp()
+            sigma = torch.clamp(
+                self.sigma_param.view(shape) + torch.zeros_like(mu),
+                min=np.log(self._sigma_min),
+                max=np.log(self._sigma_max),
+            ).exp()
         return (mu, sigma), state

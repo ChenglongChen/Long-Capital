@@ -17,7 +17,7 @@ class MetaSAC(SACPolicy):
         action_space: gym.Space,
         hidden_sizes: List[int] = [32, 16, 8],
         n_step: int = 1,
-        gamma: float = 1.0,
+        gamma: float = 0.99,
         tau: float = 0.005,
         actor_lr: float = 1e-3,
         critic_lr: float = 1e-3,
@@ -25,10 +25,12 @@ class MetaSAC(SACPolicy):
         max_action: float = 1.0,
         auto_alpha: bool = True,
         alpha: float = 0.2,
-        unbounded: bool = True,
-        conditioned_sigma: bool = True,
+        unbounded: bool = False,
+        conditioned_sigma: bool = False,
         sigma_min: float = 1e-8,
-        sigma_max: float = 0.05,
+        sigma_max: float = 1.0,
+        action_scaling: bool = False,
+        action_bound_method: str = "",
         weight_file: Optional[Path] = None,
         imitation_label_key: str = "label",
     ) -> None:
@@ -84,6 +86,8 @@ class MetaSAC(SACPolicy):
             alpha=alpha,
             estimation_step=n_step,
             action_space=action_space,
+            action_scaling=action_scaling,
+            action_bound_method=action_bound_method,
         )
 
         if weight_file is not None:
