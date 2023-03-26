@@ -10,9 +10,9 @@ from longcapital.rl.order_execution.interpreter import (
     DirectSelectionStrategyActionInterpreter,
     TopkDropoutContinuousRerankDynamicParamStrategyActionInterpreter,
     TopkDropoutContinuousRerankStrategyActionInterpreter,
+    TopkDropoutDiscreteDynamicParamStrategyActionInterpreter,
+    TopkDropoutDiscreteDynamicSelectionStrategyActionInterpreter,
     TopkDropoutDiscreteRerankDynamicParamStrategyActionInterpreter,
-    TopkDropoutDynamicParamStrategyActionInterpreter,
-    TopkDropoutDynamicSelectionStrategyActionInterpreter,
     TopkDropoutStrategyAction,
     TradeStrategyStateInterpreter,
     WeightStrategyAction,
@@ -302,12 +302,12 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         )
 
 
-class TopkDropoutDynamicParamStrategy(TopkDropoutStrategy):
+class TopkDropoutDiscreteDynamicParamStrategy(TopkDropoutStrategy):
     policy_cls = discrete.PPO
-    action_interpreter_cls = TopkDropoutDynamicParamStrategyActionInterpreter
+    action_interpreter_cls = TopkDropoutDiscreteDynamicParamStrategyActionInterpreter
 
     def __str__(self):
-        return "TopkDropoutDynamicParamStrategy"
+        return "TopkDropoutDiscreteDynamicParamStrategy"
 
 
 class TopkDropoutContinuousRerankStrategy(TopkDropoutStrategy):
@@ -338,12 +338,14 @@ class TopkDropoutDiscreteRerankDynamicParamStrategy(TopkDropoutStrategy):
         return "TopkDropoutDiscreteRerankDynamicParamStrategy"
 
 
-class TopkDropoutDynamicSelectionStrategy(TopkDropoutStrategy):
+class TopkDropoutDiscreteDynamicSelectionStrategy(TopkDropoutStrategy):
     policy_cls = discrete.PPO
-    action_interpreter_cls = TopkDropoutDynamicSelectionStrategyActionInterpreter
+    action_interpreter_cls = (
+        TopkDropoutDiscreteDynamicSelectionStrategyActionInterpreter
+    )
 
     def __str__(self):
-        return "TopkDropoutDynamicSelectionStrategy"
+        return "TopkDropoutDiscreteDynamicSelectionStrategy"
 
 
 class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):

@@ -17,7 +17,7 @@ class MetaSAC(SACPolicy):
         action_space: gym.Space,
         hidden_sizes: List[int] = [32, 16, 8],
         n_step: int = 1,
-        gamma: float = 1.0,
+        gamma: float = 0.99,
         tau: float = 0.005,
         actor_lr: float = 1e-3,
         critic_lr: float = 1e-3,

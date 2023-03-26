@@ -18,7 +18,7 @@ class MetaDDPG(DDPGPolicy):
         hidden_sizes: List[int] = [32, 16, 8],
         reward_normalization: bool = False,
         n_step: int = 3,
-        gamma: float = 1.0,
+        gamma: float = 0.99,
         tau: float = 0.05,
         actor_lr: float = 1e-4,
         critic_lr: float = 1e-3,

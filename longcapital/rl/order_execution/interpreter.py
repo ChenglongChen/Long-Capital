@@ -66,7 +66,7 @@ class TopkDropoutStrategyActionInterpreter(
         self.baseline = baseline
 
 
-class TopkDropoutDynamicParamStrategyActionInterpreter(
+class TopkDropoutDiscreteDynamicParamStrategyActionInterpreter(
     TopkDropoutStrategyActionInterpreter
 ):
     @property
@@ -84,7 +84,7 @@ class TopkDropoutDynamicParamStrategyActionInterpreter(
         )
 
 
-class TopkDropoutDynamicSelectionStrategyActionInterpreter(
+class TopkDropoutDiscreteDynamicSelectionStrategyActionInterpreter(
     TopkDropoutStrategyActionInterpreter
 ):
     def __init__(
@@ -97,7 +97,9 @@ class TopkDropoutDynamicSelectionStrategyActionInterpreter(
         baseline=False,
         **kwargs,
     ) -> None:
-        super(TopkDropoutDynamicSelectionStrategyActionInterpreter, self).__init__(
+        super(
+            TopkDropoutDiscreteDynamicSelectionStrategyActionInterpreter, self
+        ).__init__(
             topk=topk,
             n_drop=n_drop,
             hold_thresh=hold_thresh,
