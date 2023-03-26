@@ -1,4 +1,4 @@
-from typing import NamedTuple
+from typing import Dict, NamedTuple
 
 import pandas as pd
 import torch.nn.functional as F  # noqa
@@ -14,6 +14,7 @@ class TradeStrategyState(NamedTuple):
     trade_executor: BaseExecutor
     trade_strategy: BaseStrategy
     feature: pd.DataFrame
+    info: Dict = {"ready": True}
 
 
 class TradeStrategyInitiateState(NamedTuple):

@@ -29,7 +29,7 @@ class EpisodeInformationRatioAndExcessReturnReward(Reward[TradeStrategyState]):
 
     def reward(self, state: TradeStrategyState) -> float:
         reward = 0.0
-        if state.trade_executor.finished():
+        if state.info["ready"] and state.trade_executor.finished():
             (
                 portfolio_metrics,
                 _,

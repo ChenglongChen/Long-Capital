@@ -33,7 +33,7 @@ class ExecutionInformationRatioAndExcessReturnReward(Reward[TradeStrategyState])
             portfolio_metrics,
             _,
         ) = state.trade_executor.trade_account.get_portfolio_metrics()
-        if len(portfolio_metrics) >= 2:
+        if state.info["ready"] and len(portfolio_metrics) >= 2:
             analysis = risk_analysis(
                 portfolio_metrics["return"]
                 - portfolio_metrics["cost"]
@@ -123,7 +123,7 @@ class ExecutionExcessMeanVarianceReward(Reward[TradeStrategyState]):
             _,
         ) = state.trade_executor.trade_account.get_portfolio_metrics()
 
-        if len(portfolio_metrics):
+        if state.info["ready"] and len(portfolio_metrics):
             last_metrics = portfolio_metrics.iloc[-1]
             rr = self.rr_func(
                 last_metrics["return"] - last_metrics["cost"]
