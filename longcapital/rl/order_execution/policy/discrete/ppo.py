@@ -4,6 +4,7 @@ from typing import Any, List, Optional, Union
 import gym
 import numpy as np
 import torch
+from longcapital.rl.utils.distributions import Categorical
 from longcapital.rl.utils.net.common import MetaNet
 from longcapital.rl.utils.net.discrete import MetaActor, MetaCritic
 from qlib.rl.order_execution.policy import Trainer, auto_device, set_weight
@@ -13,24 +14,6 @@ from tianshou.utils.net.common import ActorCritic
 from tianshou.utils.net.discrete import Actor, Critic
 
 
-class Categorical(torch.distributions.Categorical):
-    """Sample ranking index according to Softmax distribution"""
-
-    def __init__(self, probs=None, logits=None, validate_args=None):
-        super().__init__(probs, logits, validate_args)
-        self._event_shape = (self._param.size()[-1],)
-
-    def sample(self, sample_shape=torch.Size(), replacement=False):
-        probs_2d = self.probs.reshape(-1, self._num_events)
-        samples_2d = torch.multinomial(probs_2d, self._num_events, replacement)
-        return samples_2d
-
-    def log_prob(self, value):
-        if self._validate_args:
-            self._validate_sample(value)
-        return self.logits.gather(-1, value.long())
-
-
 class PPO(PPOPolicy):
     def __init__(
         self,
@@ -38,13 +21,16 @@ class PPO(PPOPolicy):
         action_space: gym.Space,
         hidden_sizes: List[int] = [32, 16, 8],
         lr: float = 1e-4,
-        weight_decay: float = 0.0,
         discount_factor: float = 1.0,
         max_grad_norm: float = 100.0,
         reward_normalization: bool = True,
+        advantage_normalization: bool = True,
+        recompute_advantage: bool = False,
+        dual_clip: float = None,
         eps_clip: float = 0.3,
         value_clip: bool = True,
         vf_coef: float = 1.0,
+        ent_coef: float = 0.0,
         gae_lambda: float = 1.0,
         max_batch_size: int = 256,
         deterministic_eval: bool = True,
@@ -71,9 +57,13 @@ class PPO(PPOPolicy):
             discount_factor=discount_factor,
             max_grad_norm=max_grad_norm,
             reward_normalization=reward_normalization,
+            advantage_normalization=advantage_normalization,
+            recompute_advantage=recompute_advantage,
+            dual_clip=dual_clip,
             eps_clip=eps_clip,
             value_clip=value_clip,
             vf_coef=vf_coef,
+            ent_coef=ent_coef,
             gae_lambda=gae_lambda,
             max_batchsize=max_batch_size,
             deterministic_eval=deterministic_eval,
@@ -95,13 +85,16 @@ class MetaPPO(PPOPolicy):
         softmax_output: bool = True,
         hidden_sizes: List[int] = [32, 16, 8],
         lr: float = 1e-4,
-        weight_decay: float = 0.0,
         discount_factor: float = 1.0,
         max_grad_norm: float = 100.0,
         reward_normalization: bool = True,
+        advantage_normalization: bool = True,
+        recompute_advantage: bool = False,
+        dual_clip: float = None,
         eps_clip: float = 0.3,
         value_clip: bool = True,
         vf_coef: float = 1.0,
+        ent_coef: float = 0.0,
         gae_lambda: float = 1.0,
         max_batch_size: int = 256,
         deterministic_eval: bool = True,
@@ -138,9 +131,13 @@ class MetaPPO(PPOPolicy):
             discount_factor=discount_factor,
             max_grad_norm=max_grad_norm,
             reward_normalization=reward_normalization,
+            advantage_normalization=advantage_normalization,
+            recompute_advantage=recompute_advantage,
+            dual_clip=dual_clip,
             eps_clip=eps_clip,
             value_clip=value_clip,
             vf_coef=vf_coef,
+            ent_coef=ent_coef,
             gae_lambda=gae_lambda,
             max_batchsize=max_batch_size,
             deterministic_eval=deterministic_eval,
@@ -173,11 +170,24 @@ class MetaPPO(PPOPolicy):
             dist = self.dist_fn(logits)
         if self._deterministic_eval and not self.training:
             if self.action_type == "discrete":
-                act = torch.argsort(-logits, dim=1)
+                act = torch.argsort(torch.argsort(logits, dim=1), dim=1)
             elif self.action_type == "continuous":
                 act = logits[0]
         else:
-            act = dist.sample()
+
+            def get_rank(index):
+                """
+                :param index: index for the ranked values, e.g., [2, 0, 1]
+                :return: new rank for the original index, e.g., [1, 0, 2]
+                """
+                bsz, ch = index.size(0), index.size(1)
+                _, indices = torch.sort(index, dim=1)
+                rank_arr = torch.arange(start=ch - 1, end=-1, step=-1)
+                rank_arr = rank_arr.tile([bsz, 1])
+                rank = rank_arr.gather(1, indices)
+                return rank
+
+            act = get_rank(dist.sample())
         return Batch(logits=logits, act=act, state=hidden, dist=dist)
 
     def __str__(self):

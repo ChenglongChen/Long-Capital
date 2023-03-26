@@ -1,7 +1,12 @@
+import numpy as np
 import torch.nn.functional as F  # noqa
 from longcapital.rl.order_execution.state import TradeStrategyState
 from qlib.contrib.evaluate import risk_analysis
 from qlib.rl.reward import Reward
+
+
+def identity(x):
+    return x
 
 
 class ExecutionInformationRatioAndExcessReturnReward(Reward[TradeStrategyState]):
@@ -10,12 +15,14 @@ class ExecutionInformationRatioAndExcessReturnReward(Reward[TradeStrategyState])
         scale=1.0,
         ir_weight: float = 1.0,
         rr_weight: float = 1.0,
-        excess_return=True,
+        excess_return: bool = True,
+        log_rr: bool = False,
     ):
         self.scale = scale
         self.ir_weight = ir_weight
         self.rr_weight = rr_weight
         self.excess_weight = 1 if excess_return else 0
+        self.rr_func = np.log1p if log_rr else identity
 
     def __str__(self):
         return "ExecutionInformationRatioAndExcessReturnReward"
@@ -35,19 +42,17 @@ class ExecutionInformationRatioAndExcessReturnReward(Reward[TradeStrategyState])
             ir = float(analysis.loc["information_ratio"])
 
             last_metrics = portfolio_metrics.iloc[-1]
-            rr = float(
-                last_metrics["return"]
-                - last_metrics["cost"]
-                - self.excess_weight * last_metrics["bench"]
-            )
+            rr = self.rr_func(
+                last_metrics["return"] - last_metrics["cost"]
+            ) - self.excess_weight * self.rr_func(last_metrics["bench"])
             reward = self.ir_weight * ir + self.rr_weight * rr
         return reward * self.scale
 
 
 class ExecutionInformationRatioReward(ExecutionInformationRatioAndExcessReturnReward):
-    def __init__(self, scale=1.0):
+    def __init__(self, scale=1.0, log_rr: bool = False):
         super(ExecutionInformationRatioReward, self).__init__(
-            scale=scale, ir_weight=1.0, rr_weight=0.0, excess_return=True
+            scale=scale, ir_weight=1.0, rr_weight=0.0, excess_return=True, log_rr=log_rr
         )
 
     def __str__(self):
@@ -55,9 +60,13 @@ class ExecutionInformationRatioReward(ExecutionInformationRatioAndExcessReturnRe
 
 
 class ExecutionSharpRatioReward(ExecutionInformationRatioAndExcessReturnReward):
-    def __init__(self, scale=1.0):
+    def __init__(self, scale=1.0, log_rr: bool = False):
         super(ExecutionSharpRatioReward, self).__init__(
-            scale=scale, ir_weight=1.0, rr_weight=0.0, excess_return=False
+            scale=scale,
+            ir_weight=1.0,
+            rr_weight=0.0,
+            excess_return=False,
+            log_rr=log_rr,
         )
 
     def __str__(self):
@@ -65,9 +74,9 @@ class ExecutionSharpRatioReward(ExecutionInformationRatioAndExcessReturnReward):
 
 
 class ExecutionExcessReturnReward(ExecutionInformationRatioAndExcessReturnReward):
-    def __init__(self, scale=1.0):
+    def __init__(self, scale=1.0, log_rr: bool = False):
         super(ExecutionExcessReturnReward, self).__init__(
-            scale=scale, ir_weight=0.0, rr_weight=1.0, excess_return=True
+            scale=scale, ir_weight=0.0, rr_weight=1.0, excess_return=True, log_rr=log_rr
         )
 
     def __str__(self):
@@ -75,9 +84,13 @@ class ExecutionExcessReturnReward(ExecutionInformationRatioAndExcessReturnReward
 
 
 class ExecutionReturnReward(ExecutionInformationRatioAndExcessReturnReward):
-    def __init__(self, scale=1.0):
+    def __init__(self, scale=1.0, log_rr: bool = False):
         super(ExecutionReturnReward, self).__init__(
-            scale=scale, ir_weight=0.0, rr_weight=1.0, excess_return=False
+            scale=scale,
+            ir_weight=0.0,
+            rr_weight=1.0,
+            excess_return=False,
+            log_rr=log_rr,
         )
 
     def __str__(self):
@@ -94,10 +107,11 @@ class ExecutionExcessMeanVarianceReward(Reward[TradeStrategyState]):
     2. Reinforcement Learning Applications in Real Time Trading
     """
 
-    def __init__(self, scale=1.0, k=1e-4, excess_return=True):
+    def __init__(self, scale=1.0, k=1e-4, excess_return=True, log_rr: bool = False):
         self.scale = scale
         self.k = k
         self.excess_weight = 1 if excess_return else 0
+        self.rr_func = np.log1p if log_rr else identity
 
     def __str__(self):
         return "ExecutionExcessMeanVarianceReward"
@@ -111,21 +125,19 @@ class ExecutionExcessMeanVarianceReward(Reward[TradeStrategyState]):
 
         if len(portfolio_metrics):
             last_metrics = portfolio_metrics.iloc[-1]
-            reward = float(
-                last_metrics["return"]
-                - last_metrics["cost"]
-                - self.excess_weight * last_metrics["bench"]
-            )
-            reward = reward - 0.5 * self.k * (reward**2)
+            rr = self.rr_func(
+                last_metrics["return"] - last_metrics["cost"]
+            ) - self.excess_weight * self.rr_func(last_metrics["bench"])
+            reward = rr - 0.5 * self.k * (rr**2)
         return reward * self.scale
 
 
 class ExecutionMeanVarianceReward(ExecutionExcessMeanVarianceReward):
     """Similar as ExecutionExcessMeanVarianceReward but use Return in reward."""
 
-    def __init__(self, scale=1.0, k=1e-4):
+    def __init__(self, scale=1.0, k=1e-4, log_rr: bool = False):
         super(ExecutionMeanVarianceReward, self).__init__(
-            scale=scale, k=k, excess_return=False
+            scale=scale, k=k, excess_return=False, log_rr=log_rr
         )
 
     def __str__(self):

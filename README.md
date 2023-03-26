@@ -3,11 +3,11 @@
 ## Performance
 |Method| Signal Model | Trading Strategy | IR |
 | :--- | :------- |:------- | :-----------: |
-| [Supervised Learning](examples/sl.ipynb) | LGBM | TopkDropoutStrategy | 1.64627 |
-| [Reinforcement Learning](examples/rl.ipynb)| LGBM | TopkDropoutDynamicStrategy | **2.14316**|
+| [Supervised Learning](examples/sl.ipynb) | LGBM | TopkDropoutStrategy | 1.602594 |
+| [Reinforcement Learning](examples/rl.ipynb)| LGBM | TopkDropoutParamStrategy | **2.14316**|
 
 ## Learning Curve
-![metappo](fig/metappo.png)
+![metappo](fig/TopkDropoutParamStrategy.png)
 
 ## Dependency
 - My fork of [Qlib](https://github.com/microsoft/qlib): https://github.com/ChenglongChen/qlib
