@@ -32,6 +32,8 @@ class PPO(PPOPolicy):
         vf_coef: float = 1.0,
         ent_coef: float = 0.0,
         gae_lambda: float = 1.0,
+        action_scaling: bool = False,
+        action_bound_method: str = "",
         max_batch_size: int = 256,
         deterministic_eval: bool = True,
         weight_file: Optional[Path] = None,
@@ -69,6 +71,8 @@ class PPO(PPOPolicy):
             deterministic_eval=deterministic_eval,
             observation_space=obs_space,
             action_space=action_space,
+            action_scaling=action_scaling,
+            action_bound_method=action_bound_method,
         )
         if weight_file is not None:
             set_weight(self, Trainer.get_policy_state_dict(weight_file))
@@ -96,6 +100,8 @@ class MetaPPO(PPOPolicy):
         vf_coef: float = 1.0,
         ent_coef: float = 0.0,
         gae_lambda: float = 1.0,
+        action_scaling: bool = False,
+        action_bound_method: str = "",
         max_batch_size: int = 256,
         deterministic_eval: bool = True,
         weight_file: Optional[Path] = None,
@@ -118,16 +124,11 @@ class MetaPPO(PPOPolicy):
         actor_critic = ActorCritic(actor, critic)
         optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
-        # replace DiagGuassian with Independent(Normal) which is equivalent
-        # pass *logits to be consistent with policy.forward
-        def dist(*logits) -> torch.distributions.Distribution:
-            return torch.distributions.Independent(Categorical(*logits), 1)
-
         super().__init__(
             actor,
             critic,
             optim,
-            dist,
+            Categorical,
             discount_factor=discount_factor,
             max_grad_norm=max_grad_norm,
             reward_normalization=reward_normalization,
@@ -143,6 +144,8 @@ class MetaPPO(PPOPolicy):
             deterministic_eval=deterministic_eval,
             observation_space=obs_space,
             action_space=action_space,
+            action_scaling=action_scaling,
+            action_bound_method=action_bound_method,
         )
         if weight_file is not None:
             set_weight(self, Trainer.get_policy_state_dict(weight_file))
@@ -153,41 +156,15 @@ class MetaPPO(PPOPolicy):
         state: Optional[Union[dict, Batch, np.ndarray]] = None,
         **kwargs: Any,
     ) -> Batch:
-        """Compute action over the given batch data.
-        :return: A :class:`~tianshou.data.Batch` which has 4 keys:
-            * ``act`` the action.
-            * ``logits`` the network's raw output.
-            * ``dist`` the action distribution.
-            * ``state`` the hidden state.
-        .. seealso::
-            Please refer to :meth:`~tianshou.policy.BasePolicy.forward` for
-            more detailed explanation.
-        """
         logits, hidden = self.actor(batch.obs, state=state, info=batch.info)
         if isinstance(logits, tuple):
             dist = self.dist_fn(*logits)
         else:
             dist = self.dist_fn(logits)
         if self._deterministic_eval and not self.training:
-            if self.action_type == "discrete":
-                act = torch.argsort(torch.argsort(logits, dim=1), dim=1)
-            elif self.action_type == "continuous":
-                act = logits[0]
+            act = torch.argsort(logits, dim=1, descending=True)
         else:
-
-            def get_rank(index):
-                """
-                :param index: index for the ranked values, e.g., [2, 0, 1]
-                :return: new rank for the original index, e.g., [1, 0, 2]
-                """
-                bsz, ch = index.size(0), index.size(1)
-                _, indices = torch.sort(index, dim=1)
-                rank_arr = torch.arange(start=ch - 1, end=-1, step=-1)
-                rank_arr = rank_arr.tile([bsz, 1])
-                rank = rank_arr.gather(1, indices)
-                return rank
-
-            act = get_rank(dist.sample())
+            act = dist.sample()
         return Batch(logits=logits, act=act, state=hidden, dist=dist)
 
     def __str__(self):

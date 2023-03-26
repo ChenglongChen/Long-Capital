@@ -36,9 +36,11 @@ class MetaPPO(PPOPolicy):
         deterministic_eval: bool = True,
         max_action: float = 1.0,
         unbounded: bool = False,
-        conditioned_sigma: bool = True,
+        conditioned_sigma: bool = False,
         sigma_min: float = 1e-8,
-        sigma_max: float = 0.05,
+        sigma_max: float = 1.0,
+        action_scaling: bool = False,
+        action_bound_method: str = "",
         imitation_label_key: str = "label",
         weight_file: Optional[Path] = None,
     ) -> None:
@@ -91,6 +93,8 @@ class MetaPPO(PPOPolicy):
             deterministic_eval=deterministic_eval,
             observation_space=obs_space,
             action_space=action_space,
+            action_scaling=action_scaling,
+            action_bound_method=action_bound_method,
         )
         if weight_file is not None:
             set_weight(self, Trainer.get_policy_state_dict(weight_file))

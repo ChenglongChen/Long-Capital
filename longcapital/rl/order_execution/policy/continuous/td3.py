@@ -27,6 +27,8 @@ class MetaTD3(TD3Policy):
         policy_noise: float = 0.2,
         noise_clip: float = 0.5,
         update_actor_freq: int = 2,
+        action_scaling: bool = False,
+        action_bound_method: str = "",
         weight_file: Optional[Path] = None,
         imitation_label_key: str = "label",
     ) -> None:
@@ -73,6 +75,8 @@ class MetaTD3(TD3Policy):
             reward_normalization=reward_normalization,
             estimation_step=n_step,
             action_space=action_space,
+            action_scaling=action_scaling,
+            action_bound_method=action_bound_method,
         )
 
         if weight_file is not None:
