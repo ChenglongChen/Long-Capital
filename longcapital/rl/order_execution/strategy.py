@@ -374,7 +374,7 @@ class TopkDropoutDiscreteRerankDynamicParamStrategy(TopkDropoutStrategy):
             n_drop=n_drop,
             hold_thresh=hold_thresh,
             only_tradable=only_tradable,
-            dim=dim + 1,
+            dim=dim + 1,  # add 1 dim for `selected` flag
             stock_num=stock_num,
             signal_key=signal_key,
             imitation_label_key=imitation_label_key,
@@ -401,10 +401,9 @@ class TopkDropoutDiscreteRerankDynamicParamStrategy(TopkDropoutStrategy):
             pred_end_time=pred_end_time,
         )
         feature[("feature", "selected")] = 0
-        if len(self.action_interpreter.rerank_indices):
-            feature[("feature", "selected")].iloc[
-                self.action_interpreter.rerank_indices
-            ] = 1
+        feature[("feature", "selected")].iloc[
+            self.action_interpreter.rerank_indices
+        ] = 1
         return feature
 
 

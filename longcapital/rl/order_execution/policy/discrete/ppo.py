@@ -158,10 +158,7 @@ class MetaPPO(PPOPolicy):
         logits, hidden = self.actor(batch.obs, state=state, info=batch.info)
         selected = torch.Tensor(batch.obs[:, :, -1])
         mask_value = 0
-        print(selected)
-        print(logits)
         logits = logits * (1 - selected) + mask_value * selected
-        print(logits)
         if isinstance(logits, tuple):
             dist = self.dist_fn(*logits)
         else:
