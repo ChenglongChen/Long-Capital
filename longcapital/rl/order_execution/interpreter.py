@@ -14,21 +14,17 @@ from qlib.rl.interpreter import ActionInterpreter, StateInterpreter
 
 class TradeStrategyStateInterpreter(StateInterpreter[TradeStrategyState, np.ndarray]):
     def __init__(self, dim, stock_num):
-        self.stock_num = stock_num
         self.dim = dim
+        self.stock_num = stock_num
         self.shape = (self.stock_num, self.dim)
-        self.empty = np.zeros(self.shape, dtype=np.float32)
 
     def interpret(self, state: TradeStrategyState) -> np.ndarray:
-        if state.feature is None:
-            feature = self.empty
-        else:
-            feature = state.feature["feature"].values
-
+        feature = state.feature["feature"].values
+        bsz, dim = feature.shape[0], feature.shape[1]
         # padding
-        if feature.shape[0] < self.stock_num:
-            pad_size = self.stock_num - feature.shape[0]
-            feature = np.vstack([feature, MASK_VALUE * np.ones((pad_size, self.dim))])
+        if bsz < self.stock_num:
+            pad_size = self.stock_num - bsz
+            feature = np.vstack([feature, MASK_VALUE * np.ones((pad_size, dim))])
 
         feature = feature[: self.stock_num, :]
         return np.array(feature, dtype=np.float32)
@@ -43,6 +39,7 @@ class TopkDropoutStrategyAction(NamedTuple):
     topk: int
     n_drop: int
     hold_thresh: int
+    ready: bool = True
 
 
 class TopkDropoutStrategyActionInterpreter(
@@ -209,9 +206,11 @@ class TopkDropoutContinuousRerankDynamicParamStrategyActionInterpreter(
 class TopkDropoutDiscreteRerankDynamicParamStrategyActionInterpreter(
     TopkDropoutStrategyActionInterpreter
 ):
+    rerank_indices = []
+
     @property
-    def action_space(self) -> spaces.MultiDiscrete:
-        return spaces.MultiDiscrete([self.stock_num] * self.stock_num)
+    def action_space(self) -> spaces.Discrete:
+        return spaces.Discrete(self.stock_num)
 
     def interpret(
         self, state: TradeStrategyState, action: torch.Tensor
@@ -223,20 +222,30 @@ class TopkDropoutDiscreteRerankDynamicParamStrategyActionInterpreter(
         n_drop = self.n_drop
         hold_thresh = self.hold_thresh
         signal = state.feature[("feature", self.signal_key)][: self.stock_num].copy()
+        ready = True
         if not self.baseline:
-            rerank_index = action
-            signal.iloc[rerank_index] = np.arange(self.stock_num - 1, -1, -1)
-            position = state.feature[("feature", "position")][: self.stock_num].copy()
-            num_position = int(position.sum())
-            if num_position > 0:
-                hold = int((rerank_index[: self.topk] < num_position).sum())
-                n_drop = num_position - hold
+            ready = len(self.rerank_indices) == self.stock_num
+            if ready:
+                signal.iloc[self.rerank_indices] = np.arange(self.stock_num - 1, -1, -1)
+                position = state.feature[("feature", "position")][
+                    : self.stock_num
+                ].copy()
+                num_position = int(position.sum())
+                if num_position > 0:
+                    hold = int((self.rerank_indices[: self.topk] < num_position).sum())
+                    n_drop = num_position - hold
+                else:
+                    n_drop = 0
+                hold_thresh = 1
+                self.rerank_indices.clear()
             else:
-                n_drop = 0
-            hold_thresh = 1
-
+                self.rerank_indices.append(int(action))
         return TopkDropoutStrategyAction(
-            signal=signal, topk=self.topk, n_drop=n_drop, hold_thresh=hold_thresh
+            signal=signal,
+            topk=self.topk,
+            n_drop=n_drop,
+            hold_thresh=hold_thresh,
+            ready=ready,
         )
 
 

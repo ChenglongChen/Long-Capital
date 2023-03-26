@@ -50,6 +50,23 @@ class BaseTradeStrategy(BaseStrategy):
         pred_start_time: Optional[pd.Timestamp] = None,
         pred_end_time: Optional[pd.Timestamp] = None,
     ) -> Any:
+        """take necessary number of steps before ready for taking step in env"""
+        ready = False
+        while not ready:
+            action = self.one_step_action(
+                baseline=baseline,
+                pred_start_time=pred_start_time,
+                pred_end_time=pred_end_time,
+            )
+            ready = action.ready
+        return action
+
+    def one_step_action(
+        self,
+        baseline: bool = False,
+        pred_start_time: Optional[pd.Timestamp] = None,
+        pred_end_time: Optional[pd.Timestamp] = None,
+    ) -> Any:
         state = TradeStrategyState(
             trade_executor=self.executor,
             trade_strategy=self,
@@ -234,6 +251,8 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         )
         self.feature_buffer = FeatureBuffer(size=feature_n_step)
         self.position_feature_cols = position_feature_cols
+        self.dim = dim
+        self.stock_num = stock_num
         self.signal_key = signal_key
         self.pred_score = None
 
@@ -334,8 +353,59 @@ class TopkDropoutDiscreteRerankDynamicParamStrategy(TopkDropoutStrategy):
         TopkDropoutDiscreteRerankDynamicParamStrategyActionInterpreter
     )
 
+    def __init__(
+        self,
+        *,
+        topk,
+        n_drop,
+        hold_thresh,
+        only_tradable,
+        dim,
+        stock_num,
+        signal_key="signal",
+        imitation_label_key="label",
+        feature_n_step=1,
+        position_feature_cols=["count_day"],
+        checkpoint_path=None,
+        **kwargs,
+    ):
+        super().__init__(
+            topk=topk,
+            n_drop=n_drop,
+            hold_thresh=hold_thresh,
+            only_tradable=only_tradable,
+            dim=dim + 1,
+            stock_num=stock_num,
+            signal_key=signal_key,
+            imitation_label_key=imitation_label_key,
+            feature_n_step=feature_n_step,
+            position_feature_cols=position_feature_cols,
+            checkpoint_path=checkpoint_path,
+            **kwargs,
+        )
+
     def __str__(self):
         return "TopkDropoutDiscreteRerankDynamicParamStrategy"
+
+    def _get_feature(
+        self,
+        feature=None,
+        pred_start_time: Optional[pd.Timestamp] = None,
+        pred_end_time: Optional[pd.Timestamp] = None,
+    ) -> Union[pd.DataFrame, None]:
+        feature = super(
+            TopkDropoutDiscreteRerankDynamicParamStrategy, self
+        )._get_feature(
+            feature=feature,
+            pred_start_time=pred_start_time,
+            pred_end_time=pred_end_time,
+        )
+        feature[("feature", "selected")] = 0
+        if len(self.action_interpreter.rerank_indices):
+            feature[("feature", "selected")].iloc[
+                self.action_interpreter.rerank_indices
+            ] = 1
+        return feature
 
 
 class TopkDropoutDiscreteDynamicSelectionStrategy(TopkDropoutStrategy):

@@ -4,7 +4,6 @@ from typing import Any, List, Optional, Union
 import gym
 import numpy as np
 import torch
-from longcapital.rl.utils.distributions import Categorical
 from longcapital.rl.utils.net.common import MetaNet
 from longcapital.rl.utils.net.discrete import MetaActor, MetaCritic
 from qlib.rl.order_execution.policy import Trainer, auto_device, set_weight
@@ -109,7 +108,7 @@ class MetaPPO(PPOPolicy):
         net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
         actor = MetaActor(
             net,
-            action_space.shape,
+            [action_space.n],
             softmax_output=softmax_output,
             device=auto_device(net),
         ).to(auto_device(net))
@@ -128,7 +127,7 @@ class MetaPPO(PPOPolicy):
             actor,
             critic,
             optim,
-            Categorical,
+            torch.distributions.Categorical,
             discount_factor=discount_factor,
             max_grad_norm=max_grad_norm,
             reward_normalization=reward_normalization,
@@ -157,12 +156,18 @@ class MetaPPO(PPOPolicy):
         **kwargs: Any,
     ) -> Batch:
         logits, hidden = self.actor(batch.obs, state=state, info=batch.info)
+        selected = torch.Tensor(batch.obs[:, :, -1])
+        mask_value = 0
+        print(selected)
+        print(logits)
+        logits = logits * (1 - selected) + mask_value * selected
+        print(logits)
         if isinstance(logits, tuple):
             dist = self.dist_fn(*logits)
         else:
             dist = self.dist_fn(logits)
         if self._deterministic_eval and not self.training:
-            act = torch.argsort(logits, dim=1, descending=True)
+            act = logits.argmax(-1)
         else:
             act = dist.sample()
         return Batch(logits=logits, act=act, state=hidden, dist=dist)
