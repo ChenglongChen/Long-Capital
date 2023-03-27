@@ -4,6 +4,9 @@ from typing import Any, List, Optional, Union
 import gym
 import numpy as np
 import torch
+from longcapital.rl.utils.distributions.multivariate_hypergeometric import (
+    MultivariateHypergeometric,
+)
 from longcapital.rl.utils.net.common import MetaNet
 from longcapital.rl.utils.net.discrete import MetaActor, MetaCritic
 from qlib.rl.order_execution.policy import Trainer, auto_device, set_weight
@@ -104,11 +107,13 @@ class MetaPPO(PPOPolicy):
         max_batch_size: int = 256,
         deterministic_eval: bool = True,
         weight_file: Optional[Path] = None,
+        step_by_step: bool = False,
     ) -> None:
+        self.step_by_step = step_by_step
         net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
         actor = MetaActor(
             net,
-            [action_space.n],
+            [action_space.n] if self.step_by_step else action_space.shape,
             softmax_output=softmax_output,
             device=auto_device(net),
         ).to(auto_device(net))
@@ -123,11 +128,17 @@ class MetaPPO(PPOPolicy):
         actor_critic = ActorCritic(actor, critic)
         optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
+        dist = (
+            torch.distributions.Categorical
+            if self.step_by_step
+            else MultivariateHypergeometric
+        )
+
         super().__init__(
             actor,
             critic,
             optim,
-            torch.distributions.Categorical,
+            dist,
             discount_factor=discount_factor,
             max_grad_norm=max_grad_norm,
             reward_normalization=reward_normalization,
@@ -156,15 +167,19 @@ class MetaPPO(PPOPolicy):
         **kwargs: Any,
     ) -> Batch:
         logits, hidden = self.actor(batch.obs, state=state, info=batch.info)
-        selected = torch.Tensor(batch.obs[:, :, -1])
-        mask_value = 0
-        logits = logits * (1 - selected) + mask_value * selected
+        if self.step_by_step:
+            selected = torch.Tensor(batch.obs[:, :, -1])
+            mask_value = 0
+            logits = logits * (1 - selected) + mask_value * selected
         if isinstance(logits, tuple):
             dist = self.dist_fn(*logits)
         else:
             dist = self.dist_fn(logits)
         if self._deterministic_eval and not self.training:
-            act = logits.argmax(-1)
+            if self.step_by_step:
+                act = logits.argmax(-1)
+            else:
+                act = torch.argsort(logits, dim=1, descending=True)
         else:
             act = dist.sample()
         return Batch(logits=logits, act=act, state=hidden, dist=dist)

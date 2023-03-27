@@ -13,6 +13,7 @@ from longcapital.rl.order_execution.interpreter import (
     TopkDropoutDiscreteDynamicParamStrategyActionInterpreter,
     TopkDropoutDiscreteDynamicSelectionStrategyActionInterpreter,
     TopkDropoutDiscreteRerankDynamicParamStrategyActionInterpreter,
+    TopkDropoutStepByStepDiscreteRerankDynamicParamStrategyActionInterpreter,
     TopkDropoutStrategyAction,
     TradeStrategyStateInterpreter,
     WeightStrategyAction,
@@ -353,6 +354,16 @@ class TopkDropoutDiscreteRerankDynamicParamStrategy(TopkDropoutStrategy):
         TopkDropoutDiscreteRerankDynamicParamStrategyActionInterpreter
     )
 
+    def __str__(self):
+        return "TopkDropoutDiscreteRerankDynamicParamStrategy"
+
+
+class TopkDropoutStepByStepDiscreteRerankDynamicParamStrategy(TopkDropoutStrategy):
+    policy_cls = discrete.MetaPPO
+    action_interpreter_cls = (
+        TopkDropoutStepByStepDiscreteRerankDynamicParamStrategyActionInterpreter
+    )
+
     def __init__(
         self,
         *,
@@ -369,6 +380,7 @@ class TopkDropoutDiscreteRerankDynamicParamStrategy(TopkDropoutStrategy):
         checkpoint_path=None,
         **kwargs,
     ):
+        kwargs.update({"policy_kwargs": {"step_by_step": True}})
         super().__init__(
             topk=topk,
             n_drop=n_drop,
@@ -385,7 +397,7 @@ class TopkDropoutDiscreteRerankDynamicParamStrategy(TopkDropoutStrategy):
         )
 
     def __str__(self):
-        return "TopkDropoutDiscreteRerankDynamicParamStrategy"
+        return "TopkDropoutStepByStepDiscreteRerankDynamicParamStrategy"
 
     def _get_feature(
         self,
@@ -394,7 +406,7 @@ class TopkDropoutDiscreteRerankDynamicParamStrategy(TopkDropoutStrategy):
         pred_end_time: Optional[pd.Timestamp] = None,
     ) -> Union[pd.DataFrame, None]:
         feature = super(
-            TopkDropoutDiscreteRerankDynamicParamStrategy, self
+            TopkDropoutStepByStepDiscreteRerankDynamicParamStrategy, self
         )._get_feature(
             feature=feature,
             pred_start_time=pred_start_time,

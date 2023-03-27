@@ -170,28 +170,7 @@ class TopkDropoutContinuousRerankStrategyActionInterpreter(
 class TopkDropoutContinuousRerankDynamicParamStrategyActionInterpreter(
     TopkDropoutStrategyActionInterpreter
 ):
-    def __init__(
-        self,
-        topk: int,
-        n_drop: int,
-        hold_thresh: int,
-        stock_num: int,
-        signal_key="signal",
-        baseline=False,
-        **kwargs,
-    ) -> None:
-        super(
-            TopkDropoutContinuousRerankDynamicParamStrategyActionInterpreter, self
-        ).__init__(
-            topk=topk,
-            n_drop=n_drop,
-            hold_thresh=hold_thresh,
-            stock_num=stock_num,
-            signal_key=signal_key,
-            baseline=baseline,
-            **kwargs,
-        )
-        self.rerank_topk = False
+    rerank_topk = False
 
     @property
     def action_space(self) -> spaces.Box:
@@ -235,6 +214,50 @@ class TopkDropoutContinuousRerankDynamicParamStrategyActionInterpreter(
 class TopkDropoutDiscreteRerankDynamicParamStrategyActionInterpreter(
     TopkDropoutStrategyActionInterpreter
 ):
+    rerank_topk = False
+
+    @property
+    def action_space(self) -> spaces.MultiDiscrete:
+        return spaces.MultiDiscrete([self.stock_num + 1] * self.stock_num)
+
+    def interpret(
+        self, state: TradeStrategyState, action: torch.Tensor
+    ) -> TopkDropoutStrategyAction:
+
+        if isinstance(action, torch.Tensor):
+            action = action.squeeze().detach().numpy()
+
+        n_drop = self.n_drop
+        hold_thresh = self.hold_thresh
+        signal = state.feature[("feature", self.signal_key)][: self.stock_num].copy()
+        if not self.baseline:
+            if self.rerank_topk:
+                # only select topk, the rest are sorted by original signal (i.e., baseline)
+                signal.iloc[:] = 0
+                signal.iloc[action[: self.topk]] = np.arange(self.topk, 0, -1)
+            else:
+                # rerank for the whole stock pool
+                signal.iloc[action] = np.arange(self.stock_num, 0, -1)
+            # get dynamic params
+            hold_thresh = 1
+            position = state.feature[("feature", "position")][: self.stock_num].copy()
+            num_position = int(position.sum())
+            if num_position > 0:
+                hold = int((action[: self.topk] < num_position).sum())
+                n_drop = num_position - hold
+            else:
+                n_drop = 0
+        return TopkDropoutStrategyAction(
+            signal=signal,
+            topk=self.topk,
+            n_drop=n_drop,
+            hold_thresh=hold_thresh,
+        )
+
+
+class TopkDropoutStepByStepDiscreteRerankDynamicParamStrategyActionInterpreter(
+    TopkDropoutStrategyActionInterpreter
+):
     def __init__(
         self,
         topk: int,
@@ -246,7 +269,8 @@ class TopkDropoutDiscreteRerankDynamicParamStrategyActionInterpreter(
         **kwargs,
     ) -> None:
         super(
-            TopkDropoutDiscreteRerankDynamicParamStrategyActionInterpreter, self
+            TopkDropoutStepByStepDiscreteRerankDynamicParamStrategyActionInterpreter,
+            self,
         ).__init__(
             topk=topk,
             n_drop=n_drop,
