@@ -8,7 +8,7 @@ import torch.nn.functional as F  # noqa
 from gym import spaces
 from longcapital.rl.order_execution.state import TradeStrategyState
 from longcapital.rl.order_execution.utils import filter_stock, softmax
-from longcapital.rl.utils.net.common import MASK_VALUE
+from longcapital.utils.constant import MASK_VALUE
 from qlib.rl.interpreter import ActionInterpreter, StateInterpreter
 
 

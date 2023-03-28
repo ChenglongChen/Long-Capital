@@ -4,15 +4,11 @@ from typing import Any, Dict, Optional, Sequence, Tuple, Type, Union
 import numpy as np
 import torch
 import torch.nn.functional as F  # noqa
+from longcapital.utils.constant import EPS, MASK_VALUE, NEG_INF
 from tianshou.utils.net.common import MLP
 from torch import Tensor, nn
 
 ModuleType = Type[nn.Module]
-
-EPS = 1e-8
-NEG_INF = -1e8
-MASK_VALUE = NEG_INF
-MAX_POSITIONS = 1000
 
 
 def get_shape(x: Tensor):
@@ -98,7 +94,7 @@ class AttentionPooling(Pooling):
 
 class PositionalEncoding(nn.Module):
     # reference: https://pytorch.org/tutorials/beginner/transformer_tutorial.html
-    def __init__(self, d_model, dropout=0.1, max_len=50000):
+    def __init__(self, d_model, dropout=0.1, max_len=1000):
         super(PositionalEncoding, self).__init__()
         self.dropout = nn.Dropout(p=dropout)
 
@@ -109,11 +105,11 @@ class PositionalEncoding(nn.Module):
         )
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
-        pe = pe.unsqueeze(0).transpose(0, 1)
+        pe = pe.unsqueeze(0)
         self.register_buffer("pe", pe)
 
     def forward(self, x):
-        x = x + self.pe[: x.size(0), :]
+        x = x + self.pe[:, : x.size(1)]
         return self.dropout(x)
 
 

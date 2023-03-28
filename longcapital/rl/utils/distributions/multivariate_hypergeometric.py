@@ -1,6 +1,5 @@
 import torch
-
-EPS = 1e-8
+from longcapital.utils.constant import EPS
 
 
 class MultivariateHypergeometric(torch.distributions.Categorical):
