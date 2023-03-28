@@ -4,9 +4,7 @@ from typing import Any, List, Optional, Union
 import gym
 import numpy as np
 import torch
-from longcapital.rl.utils.distributions.multivariate_hypergeometric import (
-    MultivariateHypergeometric,
-)
+from longcapital.rl.utils.distributions import MultivariateHypergeometric
 from longcapital.rl.utils.net.common import MetaNet
 from longcapital.rl.utils.net.discrete import MetaActor, MetaCritic
 from qlib.rl.order_execution.policy import Trainer, auto_device, set_weight

@@ -1,0 +1,3 @@
+EPS = 1e-8
+NEG_INF = -1e8
+MASK_VALUE = NEG_INF
