@@ -2,12 +2,14 @@ import copy
 from pathlib import Path
 from typing import Any, List, Optional, Tuple, Union
 
+import numpy as np
 import pandas as pd
 import torch.nn.functional as F  # noqa
 from longcapital.rl.order_execution.aux_info import ImitationLabelCollector
 from longcapital.rl.order_execution.buffer import FeatureBuffer
 from longcapital.rl.order_execution.interpreter import (
     DirectSelectionStrategyActionInterpreter,
+    StepByStepStrategyActionInterpreter,
     TopkDropoutContinuousRerankDynamicParamStrategyActionInterpreter,
     TopkDropoutContinuousRerankStrategyActionInterpreter,
     TopkDropoutDiscreteDynamicParamStrategyActionInterpreter,
@@ -20,11 +22,16 @@ from longcapital.rl.order_execution.interpreter import (
     WeightStrategyActionInterpreter,
 )
 from longcapital.rl.order_execution.policy import continuous, discrete
-from longcapital.rl.order_execution.state import TradeStrategyState
+from longcapital.rl.order_execution.state import (
+    TradeStrategyInitialState,
+    TradeStrategyState,
+)
+from longcapital.utils.constant import FAKE_STOCK, MASK_VALUE
 from qlib.backtest.decision import TradeDecisionWO
 from qlib.backtest.position import Position
 from qlib.contrib.strategy import TopkDropoutStrategy as TopkDropoutStrategyBase
 from qlib.contrib.strategy import WeightStrategyBase
+from qlib.data import D
 from qlib.rl.aux_info import AuxiliaryInfoCollector
 from qlib.rl.interpreter import ActionInterpreter, StateInterpreter
 from qlib.strategy.base import BaseStrategy
@@ -42,8 +49,11 @@ class BaseTradeStrategy(BaseStrategy):
     feature_buffer: FeatureBuffer
     position_feature_cols: List
     signal: Any
+    raw_signal: pd.DataFrame
     signal_key: str = "signal"
     imitation_label_key: str = "label"
+    initial_state: TradeStrategyInitialState
+    stock_pool: List[str]
 
     def action(
         self,
@@ -75,6 +85,7 @@ class BaseTradeStrategy(BaseStrategy):
                 pred_start_time=pred_start_time,
                 pred_end_time=pred_end_time,
             ),
+            initial_state=self.initial_state,
         )
         obs = [{"obs": self.state_interpreter.interpret(state), "info": {}}]
         policy_out = self.policy(Batch(obs))
@@ -118,11 +129,27 @@ class BaseTradeStrategy(BaseStrategy):
             feature.fillna(0, inplace=True)
 
         # sort to make sure the ranking distribution is similar across different dates
-        feature.sort_values(
-            by=[("feature", "position"), ("feature", self.signal_key)],
-            ascending=False,
-            inplace=True,
-        )
+        if self.initial_state.stock_sorting:
+            feature.sort_values(
+                by=[("feature", "position"), ("feature", self.signal_key)],
+                ascending=False,
+                inplace=True,
+            )
+
+        # sample stocks
+        stock_pool = self.sample_stocks(stocks=feature.index.tolist())
+        feature = feature[feature.index.isin(stock_pool)]
+
+        # padding
+        bsz, dim = feature.shape[0], feature.shape[1]
+        if bsz < self.initial_state.stock_num:
+            pad_size = self.initial_state.stock_num - bsz
+            padding = pd.DataFrame(
+                MASK_VALUE * np.ones((pad_size, dim)),
+                columns=feature.columns,
+                index=pd.Index([FAKE_STOCK] * pad_size, name="instrument"),
+            )
+            feature = pd.concat([feature, padding], axis=0)
 
         return feature
 
@@ -221,6 +248,31 @@ class BaseTradeStrategy(BaseStrategy):
         trade_step = self.trade_calendar.get_trade_step()
         return self.trade_calendar.get_step_time(trade_step, shift=1)
 
+    def reset_initial_state(self, initial_state: TradeStrategyInitialState):
+        self.initial_state = initial_state
+        self.stock_pool = []
+
+    def sample_stocks(self, stocks: List[str]):
+        if self.initial_state.stock_sorting:
+            # select top stocks every day
+            return stocks[: self.initial_state.stock_num]
+        elif self.initial_state.stock_sampling_method == "daily":
+            # select random stocks every day
+            return np.random.choice(stocks, self.initial_state.stock_num)
+        elif self.initial_state.stock_sampling_method == "interval":
+            # select random stocks once, and fix for the whole interval
+            if len(self.stock_pool) == 0:
+                instruments = D.list_instruments(
+                    instruments=D.instruments("csi300"),
+                    start_time=self.trade_calendar.start_time,
+                    end_time=self.trade_calendar.end_time,
+                    as_list=True,
+                )
+                self.stock_pool = np.random.choice(
+                    instruments, self.initial_state.stock_num
+                )
+            return self.stock_pool
+
 
 class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
     policy_cls: BasePolicy
@@ -243,6 +295,9 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         checkpoint_path=None,
         **kwargs,
     ):
+        policy_kwargs = kwargs.pop("policy_kwargs", {})
+        state_interpreter_kwargs = kwargs.pop("state_interpreter_kwargs", {})
+        action_interpreter_kwargs = kwargs.pop("action_interpreter_kwargs", {})
         super().__init__(
             topk=topk,
             n_drop=n_drop,
@@ -259,8 +314,7 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
 
         self.state_interpreter = self.state_interpreter_cls(
             dim=dim * feature_n_step,
-            stock_num=stock_num,
-            **kwargs.get("state_interpreter_kwargs", {}),
+            **state_interpreter_kwargs,
         )
         self.action_interpreter = self.action_interpreter_cls(
             topk=self.topk,
@@ -268,7 +322,7 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
             hold_thresh=self.hold_thresh,
             stock_num=stock_num,
             signal_key=signal_key,
-            **kwargs.get("action_interpreter_kwargs", {}),
+            **action_interpreter_kwargs,
         )
         self.baseline_action_interpreter = self.action_interpreter_cls(
             topk=self.topk,
@@ -277,7 +331,7 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
             stock_num=stock_num,
             signal_key=signal_key,
             baseline=True,
-            **kwargs.get("action_interpreter_kwargs", {}),
+            **action_interpreter_kwargs,
         )
         self.aux_info_collector = ImitationLabelCollector(
             stock_num=stock_num, label_key=imitation_label_key
@@ -286,7 +340,7 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
             obs_space=self.state_interpreter.observation_space,
             action_space=self.action_interpreter.action_space,
             weight_file=Path(checkpoint_path) if checkpoint_path else None,
-            **kwargs.get("policy_kwargs", {}),
+            **policy_kwargs,
         )
         if checkpoint_path:
             self.policy.eval()
@@ -298,7 +352,7 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         return self.pred_score
 
     def prepare_trading_with_action(self, action: TopkDropoutStrategyAction):
-        self.pred_score = action.signal
+        self.pred_score = action.signal[~action.signal.index.isin([FAKE_STOCK])]
         self.topk = action.topk
         self.n_drop = action.n_drop
         self.hold_thresh = action.hold_thresh
@@ -413,9 +467,12 @@ class TopkDropoutStepByStepDiscreteRerankDynamicParamStrategy(TopkDropoutStrateg
             pred_end_time=pred_end_time,
         )
         feature[("feature", "selected")] = 0
-        feature[("feature", "selected")].iloc[
-            self.action_interpreter.rerank_indices
-        ] = 1
+        selected_stock_indices = [
+            s
+            for s in self.action_interpreter.selected_stock_indices
+            if s < len(feature)
+        ]
+        feature[("feature", "selected")].iloc[selected_stock_indices] = 1
         return feature
 
 
@@ -446,26 +503,27 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
         feature_n_step=1,
         position_feature_cols=["count_day"],
         checkpoint_path=None,
-        verbose=False,
         **kwargs,
     ):
+        policy_kwargs = kwargs.pop("policy_kwargs", {})
+        state_interpreter_kwargs = kwargs.pop("state_interpreter_kwargs", {})
+        action_interpreter_kwargs = kwargs.pop("action_interpreter_kwargs", {})
         super().__init__(**kwargs)
         self.feature_buffer = FeatureBuffer(size=feature_n_step)
         self.position_feature_cols = position_feature_cols
-        self.verbose = verbose
         self.signal_key = signal_key
+        self.stock_num = stock_num
 
         self.state_interpreter = self.state_interpreter_cls(
             dim=dim * feature_n_step,
-            stock_num=stock_num,
-            **kwargs.get("state_interpreter_kwargs", {}),
+            **state_interpreter_kwargs,
         )
         self.action_interpreter = self.action_interpreter_cls(
             topk=topk,
             stock_num=stock_num,
             signal_key=signal_key,
             equal_weight=equal_weight,
-            **kwargs.get("action_interpreter_kwargs", {}),
+            **action_interpreter_kwargs,
         )
         self.baseline_action_interpreter = self.action_interpreter_cls(
             topk=topk,
@@ -473,7 +531,7 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
             signal_key=signal_key,
             equal_weight=equal_weight,
             baseline=True,
-            **kwargs.get("action_interpreter_kwargs", {}),
+            **action_interpreter_kwargs,
         )
         self.aux_info_collector = ImitationLabelCollector(
             stock_num=stock_num, label_key=imitation_label_key
@@ -482,7 +540,7 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
             obs_space=self.state_interpreter.observation_space,
             action_space=self.action_interpreter.action_space,
             weight_file=Path(checkpoint_path) if checkpoint_path else None,
-            **kwargs.get("policy_kwargs", {}),
+            **policy_kwargs,
         )
         if checkpoint_path:
             self.policy.eval()
@@ -545,3 +603,59 @@ class DirectSelectionStrategy(WeightStrategy):
 
     def __str__(self):
         return "DirectSelectionStrategy"
+
+
+class StepByStepStrategy(WeightStrategy):
+    policy_cls = discrete.MetaPPO
+    action_interpreter_cls = StepByStepStrategyActionInterpreter
+
+    def __init__(
+        self,
+        *,
+        topk,
+        dim,
+        stock_num,
+        equal_weight=True,
+        signal_key="signal",
+        imitation_label_key="label",
+        feature_n_step=1,
+        position_feature_cols=["count_day"],
+        checkpoint_path=None,
+        **kwargs,
+    ):
+        kwargs.update({"policy_kwargs": {"step_by_step": True}})
+        super().__init__(
+            topk=topk,
+            dim=dim + 1,  # add 1 dim for `selected` flag
+            stock_num=300,
+            equal_weight=equal_weight,
+            signal_key=signal_key,
+            imitation_label_key=imitation_label_key,
+            feature_n_step=feature_n_step,
+            position_feature_cols=position_feature_cols,
+            checkpoint_path=checkpoint_path,
+            **kwargs,
+        )
+
+    def __str__(self):
+        return "StepByStepStrategy"
+
+    def _get_feature(
+        self,
+        feature=None,
+        pred_start_time: Optional[pd.Timestamp] = None,
+        pred_end_time: Optional[pd.Timestamp] = None,
+    ) -> Union[pd.DataFrame, None]:
+        feature = super(StepByStepStrategy, self)._get_feature(
+            feature=feature,
+            pred_start_time=pred_start_time,
+            pred_end_time=pred_end_time,
+        )
+        feature[("feature", "selected")] = 0
+        selected_stock_indices = [
+            s
+            for s in self.action_interpreter.selected_stock_indices
+            if s < len(feature)
+        ]
+        feature[("feature", "selected")].iloc[selected_stock_indices] = 1
+        return feature

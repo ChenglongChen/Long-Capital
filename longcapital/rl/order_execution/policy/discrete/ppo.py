@@ -29,9 +29,9 @@ class PPO(PPOPolicy):
         dual_clip: float = None,
         eps_clip: float = 0.3,
         value_clip: bool = True,
-        vf_coef: float = 0.5,
-        ent_coef: float = 0.01,
-        gae_lambda: float = 1.0,
+        vf_coef: float = 0.0,
+        ent_coef: float = 0.0,
+        gae_lambda: float = 0.0,
         action_scaling: bool = False,
         action_bound_method: str = "",
         max_batch_size: int = 256,
@@ -97,17 +97,20 @@ class MetaPPO(PPOPolicy):
         dual_clip: float = None,
         eps_clip: float = 0.3,
         value_clip: bool = True,
-        vf_coef: float = 0.5,
-        ent_coef: float = 0.01,
-        gae_lambda: float = 1.0,
+        vf_coef: float = 0.0,
+        ent_coef: float = 0.0,
+        gae_lambda: float = 0.0,
         action_scaling: bool = False,
         action_bound_method: str = "",
         max_batch_size: int = 256,
         deterministic_eval: bool = True,
         weight_file: Optional[Path] = None,
         step_by_step: bool = False,
+        topk: int = 1,
     ) -> None:
         self.step_by_step = step_by_step
+        self.topk = topk
+
         net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
         actor = MetaActor(
             net,
@@ -118,7 +121,7 @@ class MetaPPO(PPOPolicy):
 
         net = MetaNet(
             obs_space.shape,
-            action_space.shape,
+            [action_space.n] if self.step_by_step else action_space.shape,
             hidden_sizes=hidden_sizes,
             attn_pooling=True,
         )
@@ -126,11 +129,11 @@ class MetaPPO(PPOPolicy):
         actor_critic = ActorCritic(actor, critic)
         optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
-        dist = (
-            torch.distributions.Categorical
-            if self.step_by_step
-            else MultivariateHypergeometric
-        )
+        def dist(logits) -> torch.distributions.Distribution:
+            if self.step_by_step:
+                return torch.distributions.Categorical(logits)
+            else:
+                return MultivariateHypergeometric(probs=logits, topk=self.topk)
 
         super().__init__(
             actor,
@@ -174,10 +177,10 @@ class MetaPPO(PPOPolicy):
         else:
             dist = self.dist_fn(logits)
         if self._deterministic_eval and not self.training:
-            if self.step_by_step:
+            if self.step_by_step or self.topk == 1:
                 act = logits.argmax(-1)
             else:
-                act = torch.argsort(logits, dim=1, descending=True)
+                act = torch.argsort(logits, dim=1, descending=True)[:, : self.topk]
         else:
             act = dist.sample()
         return Batch(logits=logits, act=act, state=hidden, dist=dist)
