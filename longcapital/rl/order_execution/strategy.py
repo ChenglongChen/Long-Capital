@@ -326,6 +326,7 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         stock_sorting=True,
         start_time=None,
         end_time=None,
+        rerank_topk=True,
         signal_key="signal",
         imitation_label_key="label",
         feature_n_step=1,
@@ -334,6 +335,7 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         **kwargs,
     ):
         policy_kwargs = kwargs.pop("policy_kwargs", {})
+        policy_kwargs.update({"topk": topk if rerank_topk else stock_num})
         state_interpreter_kwargs = kwargs.pop("state_interpreter_kwargs", {})
         action_interpreter_kwargs = kwargs.pop("action_interpreter_kwargs", {})
         super().__init__(
@@ -363,6 +365,7 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
             n_drop=self.n_drop,
             hold_thresh=self.hold_thresh,
             stock_num=stock_num,
+            rerank_topk=rerank_topk,
             signal_key=signal_key,
             **action_interpreter_kwargs,
         )
@@ -371,6 +374,7 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
             n_drop=self.n_drop,
             hold_thresh=self.hold_thresh,
             stock_num=stock_num,
+            rerank_topk=rerank_topk,
             signal_key=signal_key,
             baseline=True,
             **action_interpreter_kwargs,
@@ -455,6 +459,18 @@ class TopkDropoutDiscreteRerankDynamicParamStrategy(TopkDropoutStrategy):
         return "TopkDropoutDiscreteRerankDynamicParamStrategy"
 
 
+class TopkDropoutDiscreteWeightContinuousRerankDynamicParamStrategy(
+    TopkDropoutStrategy
+):
+    policy_cls = discrete.WeightMetaPPO
+    action_interpreter_cls = (
+        TopkDropoutContinuousRerankDynamicParamStrategyActionInterpreter
+    )
+
+    def __str__(self):
+        return "TopkDropoutDiscreteWeightContinuousRerankDynamicParamStrategy"
+
+
 class TopkDropoutStepByStepDiscreteRerankDynamicParamStrategy(TopkDropoutStrategy):
     policy_cls = discrete.StepByStepMetaPPO
     action_interpreter_cls = (
@@ -492,6 +508,7 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
         equal_weight=False,
         start_time=None,
         end_time=None,
+        rerank_topk=True,
         signal_key="signal",
         imitation_label_key="label",
         feature_n_step=1,
@@ -500,6 +517,7 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
         **kwargs,
     ):
         policy_kwargs = kwargs.pop("policy_kwargs", {})
+        policy_kwargs.update({"topk": topk if rerank_topk else stock_num})
         state_interpreter_kwargs = kwargs.pop("state_interpreter_kwargs", {})
         action_interpreter_kwargs = kwargs.pop("action_interpreter_kwargs", {})
         super().__init__(**kwargs)
@@ -522,6 +540,7 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
             topk=topk,
             stock_num=stock_num,
             only_tradable=only_tradable,
+            rerank_topk=rerank_topk,
             signal_key=signal_key,
             equal_weight=equal_weight,
             **action_interpreter_kwargs,
@@ -530,6 +549,7 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
             topk=topk,
             stock_num=stock_num,
             only_tradable=only_tradable,
+            rerank_topk=rerank_topk,
             signal_key=signal_key,
             equal_weight=equal_weight,
             baseline=True,
@@ -628,9 +648,8 @@ class StepByStepStrategy(WeightStrategy):
 
 
 class DiscreteWeightStrategy(WeightStrategy):
-    policy_cls: BasePolicy = discrete.WeightMetaPPO
-    state_interpreter_cls: StateInterpreter = TradeStrategyStateInterpreter
-    action_interpreter_cls: ActionInterpreter = WeightStrategyActionInterpreter
+    policy_cls = discrete.WeightMetaPPO
+    action_interpreter_cls = WeightStrategyActionInterpreter
 
     def __str__(self):
         return "DiscreteWeightStrategy"

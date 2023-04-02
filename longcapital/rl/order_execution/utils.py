@@ -28,8 +28,8 @@ def softmax(x):
 
 
 # filter non-tradable stocks
-def filter_stock(state, stocks, weights=None):
-    if len(stocks) and (weights is None or len(weights)):
+def filter_nontradable_stock(state, stocks, weights=None):
+    def get_tradable_index(state, stocks):
         (
             trade_start_time,
             trade_end_time,
@@ -42,13 +42,24 @@ def filter_stock(state, stocks, weights=None):
                 start_time=trade_start_time,
                 end_time=trade_end_time,
             )
-            and s != FAKE_STOCK
         ]
-        if weights is not None:
-            return stocks[tradable], weights[tradable]
-        else:
-            return stocks[tradable]
-    if weights is not None:
-        return [], []
-    else:
-        return []
+        return tradable
+
+    if len(stocks) and len(weights):
+        tradable = get_tradable_index(state, stocks)
+        return stocks[tradable], weights[tradable]
+
+    return [], []
+
+
+# filter fake stock
+def filter_fake_stock(state, stocks, weights):
+    def get_tradable_index(stocks):
+        tradable = [i for i, s in enumerate(stocks) if s != FAKE_STOCK]
+        return tradable
+
+    if len(stocks) and len(weights):
+        tradable = get_tradable_index(stocks)
+        return stocks[tradable], weights[tradable]
+
+    return [], []
