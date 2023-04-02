@@ -358,6 +358,7 @@ class TopkDropoutStepByStepDiscreteRerankDynamicParamStrategyActionInterpreter(
 
 
 class WeightStrategyAction(NamedTuple):
+    signal: pd.DataFrame
     target_weight_position: Dict[str, float]
     ready: bool = True
 
@@ -369,7 +370,8 @@ class WeightStrategyActionInterpreter(
         self,
         topk,
         stock_num,
-        equal_weight=True,
+        only_tradable,
+        equal_weight=False,
         signal_key="signal",
         baseline=False,
         normalize="sum",
@@ -377,6 +379,7 @@ class WeightStrategyActionInterpreter(
     ) -> None:
         self.topk = topk
         self.stock_num = stock_num
+        self.only_tradable = only_tradable
         self.equal_weight = equal_weight
         self.signal_key = signal_key
         self.baseline = baseline
@@ -400,12 +403,13 @@ class WeightStrategyActionInterpreter(
         # stocks & weights
         topk = state.initial_state.topk
         stock_num = state.initial_state.stock_num
+        signal = state.feature[("feature", self.signal_key)][:stock_num].copy()
         stocks = state.feature.index[:stock_num]
-        signal = state.feature[("feature", self.signal_key)].values
-        weights = signal if self.baseline else action
+        weights = signal.values if self.baseline else action
 
         # filter non-tradable stocks
-        stocks, weights = filter_stock(state, stocks, weights)
+        if self.only_tradable:
+            stocks, weights = filter_stock(state, stocks, weights)
 
         if len(stocks) == 0:
             return WeightStrategyAction(target_weight_position={})
@@ -429,7 +433,9 @@ class WeightStrategyActionInterpreter(
             for stock, weight in zip(stocks, weights)
         }
 
-        return WeightStrategyAction(target_weight_position=target_weight_position)
+        return WeightStrategyAction(
+            signal=signal, target_weight_position=target_weight_position
+        )
 
 
 class DirectSelectionStrategyActionInterpreter(WeightStrategyActionInterpreter):
@@ -447,11 +453,13 @@ class DirectSelectionStrategyActionInterpreter(WeightStrategyActionInterpreter):
             action = action.squeeze().detach().numpy()
 
         stock_num = state.initial_state.stock_num
+        signal = state.feature[("feature", self.signal_key)][:stock_num].copy()
         stocks = state.feature.index[:stock_num]
         weights = np.ones(len(stocks)) if self.baseline else action
 
         # filter non-tradable stocks
-        stocks, weights = filter_stock(state, stocks, weights)
+        if self.only_tradable:
+            stocks, weights = filter_stock(state, stocks, weights)
 
         if len(stocks) == 0:
             return WeightStrategyAction(target_weight_position={})
@@ -465,7 +473,9 @@ class DirectSelectionStrategyActionInterpreter(WeightStrategyActionInterpreter):
             stock: 1.0 / len(stocks) for stock, weight in zip(stocks, weights)
         }
 
-        return WeightStrategyAction(target_weight_position=target_weight_position)
+        return WeightStrategyAction(
+            signal=signal, target_weight_position=target_weight_position
+        )
 
 
 class StepByStepStrategyActionInterpreter(
@@ -474,6 +484,7 @@ class StepByStepStrategyActionInterpreter(
     def __init__(
         self,
         topk,
+        only_tradable,
         stock_num=300,
         signal_key="signal",
         baseline=False,
@@ -481,6 +492,7 @@ class StepByStepStrategyActionInterpreter(
     ) -> None:
         self.topk = topk
         self.stock_num = stock_num
+        self.only_tradable = only_tradable
         self.signal_key = signal_key
         self.baseline = baseline
         self.selected_stock_indices = []
@@ -497,11 +509,12 @@ class StepByStepStrategyActionInterpreter(
             action = action.squeeze().detach().numpy()
 
         topk = state.initial_state.topk
+        stock_num = state.initial_state.stock_num
+        signal = state.feature[("feature", self.signal_key)][:stock_num].copy()
         stocks = []
         ready = False
         if self.baseline:
-            signal = state.feature[("feature", self.signal_key)].values
-            selected_stock_indices = np.argpartition(-signal, topk)[:topk]
+            selected_stock_indices = np.argpartition(-signal.values, topk)[:topk]
             stocks = state.feature.index[selected_stock_indices]
             ready = True
         else:
@@ -517,12 +530,13 @@ class StepByStepStrategyActionInterpreter(
                 ready = True
 
         # filter non-tradable stocks
-        stocks = filter_stock(state, stocks)
+        if self.only_tradable:
+            stocks = filter_stock(state, stocks)
 
         # assign weight
         w = 1.0 / topk
         target_weight_position = dict(zip(stocks, [w] * len(stocks)))
 
         return WeightStrategyAction(
-            target_weight_position=target_weight_position, ready=ready
+            signal=signal, target_weight_position=target_weight_position, ready=ready
         )

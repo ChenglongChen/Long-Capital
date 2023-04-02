@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional, Sequence, Tuple, Union
 import numpy as np
 import torch
 import torch.nn.functional as F  # noqa
+from longcapital.utils.constant import MASK_VALUE, NEG_INF
 from tianshou.utils.net.common import MLP
 from tianshou.utils.net.discrete import Critic
 from torch import nn
@@ -43,6 +44,8 @@ class MetaActor(nn.Module):
         logits = self.last(logits)
         logits = logits.view(bsz, ch)
         if self.softmax_output:
+            mask = obs.eq(MASK_VALUE).all(2).float()
+            logits = (1 - mask) * logits + mask * NEG_INF
             logits = F.softmax(logits, dim=-1)
         return logits, hidden
 

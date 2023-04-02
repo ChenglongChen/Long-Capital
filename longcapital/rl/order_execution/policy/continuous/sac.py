@@ -17,7 +17,7 @@ class MetaSAC(SACPolicy):
         action_space: gym.Space,
         hidden_sizes: List[int] = [32, 16, 8],
         n_step: int = 1,
-        gamma: float = 0.99,
+        gamma: float = 1.0,
         tau: float = 0.005,
         actor_lr: float = 1e-3,
         critic_lr: float = 1e-3,
@@ -33,6 +33,7 @@ class MetaSAC(SACPolicy):
         action_bound_method: str = "",
         weight_file: Optional[Path] = None,
         imitation_label_key: str = "label",
+        **kwargs,
     ) -> None:
         self.imitation_label_key = imitation_label_key
         net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)

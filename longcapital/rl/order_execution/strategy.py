@@ -192,15 +192,27 @@ class BaseTradeStrategy(BaseStrategy):
             order_df = pd.DataFrame(order_list)[["stock_id", "direction"]]
             order_df.columns = ["instrument", "direction"]
 
+            if hasattr(action, "target_weight_position"):
+                weight_df = pd.DataFrame(
+                    action.target_weight_position, index=["weight"]
+                ).T
+                weight_df.index.rename("instrument", inplace=True)
+            else:
+                weight_df = pd.DataFrame(
+                    1 / len(order_df), columns=["weight"], index=order_df.index
+                )
+
             action_df = pd.merge(action_df, order_df, on="instrument", how="left")
+            action_df = pd.merge(action_df, weight_df, on="instrument", how="left")
             if baseline:
                 action_df.columns = [
                     "instrument",
                     "signal_baseline",
                     "direction_baseline",
+                    "weight_baseline",
                 ]
             else:
-                action_df.columns = ["instrument", "signal", "direction"]
+                action_df.columns = ["instrument", "signal", "direction", "weight"]
             action_dfs.append(action_df)
 
         # reformat trade decision into dataframe
@@ -219,8 +231,10 @@ class BaseTradeStrategy(BaseStrategy):
         cols = [
             "instrument",
             "direction",
+            "weight",
             "signal",
             "direction_baseline",
+            "weight_baseline",
             "signal_baseline",
         ] + self.position_feature_cols
         decision_df = decision_df[cols]
@@ -257,6 +271,16 @@ class BaseTradeStrategy(BaseStrategy):
     def get_pred_start_end_time(self) -> Tuple[pd.Timestamp, pd.Timestamp]:
         trade_step = self.trade_calendar.get_trade_step()
         return self.trade_calendar.get_step_time(trade_step, shift=1)
+
+    def set_initial_state(self):
+        self.initial_state = TradeStrategyInitialState(
+            start_time=self.start_time,
+            end_time=self.end_time,
+            topk=self.topk,
+            stock_num=self.stock_num,
+            stock_sampling_method=self.stock_sampling_method,
+            stock_sorting=self.stock_sorting,
+        )
 
     def reset_initial_state(self, initial_state: TradeStrategyInitialState):
         self.initial_state = initial_state
@@ -298,6 +322,10 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         only_tradable,
         dim,
         stock_num,
+        stock_sampling_method="daily",
+        stock_sorting=True,
+        start_time=None,
+        end_time=None,
         signal_key="signal",
         imitation_label_key="label",
         feature_n_step=1,
@@ -317,9 +345,13 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         )
         self.feature_buffer = FeatureBuffer(size=feature_n_step)
         self.position_feature_cols = position_feature_cols
+        self.start_time = start_time
+        self.end_time = end_time
         self.dim = dim
         self.stock_num = stock_num
         self.signal_key = signal_key
+        self.stock_sampling_method = stock_sampling_method
+        self.stock_sorting = stock_sorting
         self.pred_score = None
 
         self.state_interpreter = self.state_interpreter_cls(
@@ -354,6 +386,7 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         )
         if checkpoint_path:
             self.policy.eval()
+        self.set_initial_state()
 
     def __str__(self):
         return "TopkDropoutStrategy"
@@ -453,7 +486,12 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
         topk,
         dim,
         stock_num,
+        only_tradable,
+        stock_sampling_method="daily",
+        stock_sorting=True,
         equal_weight=False,
+        start_time=None,
+        end_time=None,
         signal_key="signal",
         imitation_label_key="label",
         feature_n_step=1,
@@ -467,8 +505,14 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
         super().__init__(**kwargs)
         self.feature_buffer = FeatureBuffer(size=feature_n_step)
         self.position_feature_cols = position_feature_cols
+        self.start_time = start_time
+        self.end_time = end_time
         self.signal_key = signal_key
+        self.topk = topk
         self.stock_num = stock_num
+        self.stock_sampling_method = stock_sampling_method
+        self.stock_sorting = stock_sorting
+        self.only_tradable = only_tradable
 
         self.state_interpreter = self.state_interpreter_cls(
             dim=dim * feature_n_step,
@@ -477,6 +521,7 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
         self.action_interpreter = self.action_interpreter_cls(
             topk=topk,
             stock_num=stock_num,
+            only_tradable=only_tradable,
             signal_key=signal_key,
             equal_weight=equal_weight,
             **action_interpreter_kwargs,
@@ -484,6 +529,7 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
         self.baseline_action_interpreter = self.action_interpreter_cls(
             topk=topk,
             stock_num=stock_num,
+            only_tradable=only_tradable,
             signal_key=signal_key,
             equal_weight=equal_weight,
             baseline=True,
@@ -500,19 +546,28 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
         )
         if checkpoint_path:
             self.policy.eval()
+        self.set_initial_state()
 
     def __str__(self):
         return "WeightStrategy"
 
     def generate_trade_decision(
-        self, execute_result=None, action: WeightStrategyAction = None
+        self,
+        execute_result=None,
+        action: WeightStrategyAction = None,
+        trade_start_time: Optional[pd.Timestamp] = None,
+        trade_end_time: Optional[pd.Timestamp] = None,
+        return_decision: bool = True,
     ):
         # generate_trade_decision
         # generate_target_weight_position() and generate_order_list_from_target_weight_position() to generate order_list
 
         # get the number of trading step finished, trade_step can be [0, 1, 2, ..., trade_len - 1]
         trade_step = self.trade_calendar.get_trade_step()
-        trade_start_time, trade_end_time = self.trade_calendar.get_step_time(trade_step)
+        if trade_start_time is None or trade_end_time is None:
+            trade_start_time, trade_end_time = self.trade_calendar.get_step_time(
+                trade_step
+            )
         pred_start_time, pred_end_time = self.trade_calendar.get_step_time(
             trade_step, shift=1
         )
@@ -543,7 +598,10 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
                 trade_end_time=trade_end_time,
             )
         )
-        return TradeDecisionWO(order_list, self)
+        if return_decision:
+            return TradeDecisionWO(order_list, self)
+        else:
+            return order_list
 
     def generate_target_weight_position(
         self, score, current, trade_start_time, trade_end_time, action=None

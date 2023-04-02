@@ -21,7 +21,7 @@ class PPO(PPOPolicy):
         action_space: gym.Space,
         hidden_sizes: List[int] = [32, 16, 8],
         lr: float = 1e-4,
-        discount_factor: float = 0.95,
+        discount_factor: float = 1.0,
         max_grad_norm: float = 100.0,
         reward_normalization: bool = True,
         advantage_normalization: bool = True,
@@ -37,6 +37,7 @@ class PPO(PPOPolicy):
         max_batch_size: int = 256,
         deterministic_eval: bool = True,
         weight_file: Optional[Path] = None,
+        **kwargs,
     ) -> None:
         net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, attn_pooling=True)
         actor = Actor(net, action_space.n, device=auto_device(net)).to(auto_device(net))
@@ -89,7 +90,7 @@ class MetaPPO(PPOPolicy):
         softmax_output: bool = True,
         hidden_sizes: List[int] = [32, 16, 8],
         lr: float = 1e-4,
-        discount_factor: float = 0.95,
+        discount_factor: float = 1.0,
         max_grad_norm: float = 100.0,
         reward_normalization: bool = True,
         advantage_normalization: bool = True,
@@ -181,7 +182,7 @@ class StepByStepMetaPPO(PPOPolicy):
         softmax_output: bool = True,
         hidden_sizes: List[int] = [32, 16, 8],
         lr: float = 1e-4,
-        discount_factor: float = 0.95,
+        discount_factor: float = 1.0,
         max_grad_norm: float = 100.0,
         reward_normalization: bool = True,
         advantage_normalization: bool = True,
@@ -276,7 +277,7 @@ class TopkMetaPPO(PPOPolicy):
         softmax_output: bool = True,
         hidden_sizes: List[int] = [32, 16, 8],
         lr: float = 1e-4,
-        discount_factor: float = 0.95,
+        discount_factor: float = 1.0,
         max_grad_norm: float = 100.0,
         reward_normalization: bool = True,
         advantage_normalization: bool = True,
@@ -377,7 +378,7 @@ class WeightMetaPPO(PPOPolicy):
         softmax_output: bool = True,
         hidden_sizes: List[int] = [32, 16, 8],
         lr: float = 1e-4,
-        discount_factor: float = 0.95,
+        discount_factor: float = 1.0,
         max_grad_norm: float = 100.0,
         reward_normalization: bool = True,
         advantage_normalization: bool = True,
@@ -393,9 +394,9 @@ class WeightMetaPPO(PPOPolicy):
         max_batch_size: int = 256,
         deterministic_eval: bool = True,
         weight_file: Optional[Path] = None,
-        total_count: int = 1000,
         **kwargs,
     ) -> None:
+        total_count = kwargs.get("topk", 10)
 
         net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
         actor = MetaActor(
