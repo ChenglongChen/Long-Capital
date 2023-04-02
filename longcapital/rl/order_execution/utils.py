@@ -4,6 +4,7 @@ from random import randrange
 import numpy as np
 import scipy
 import torch
+from longcapital.utils.constant import FAKE_STOCK
 
 
 def random_daterange(start, end):
@@ -27,8 +28,8 @@ def softmax(x):
 
 
 # filter non-tradable stocks
-def filter_stock(state, stocks, weights):
-    if len(stocks) and len(weights):
+def filter_stock(state, stocks, weights=None):
+    if len(stocks) and (weights is None or len(weights)):
         (
             trade_start_time,
             trade_end_time,
@@ -41,6 +42,13 @@ def filter_stock(state, stocks, weights):
                 start_time=trade_start_time,
                 end_time=trade_end_time,
             )
+            and s != FAKE_STOCK
         ]
-        return stocks[tradable], weights[tradable]
-    return [], []
+        if weights is not None:
+            return stocks[tradable], weights[tradable]
+        else:
+            return stocks[tradable]
+    if weights is not None:
+        return [], []
+    else:
+        return []

@@ -166,7 +166,7 @@ class MetaNet(nn.Module):
         nhead=2,
         num_layers=6,
         dropout=0.1,
-        position_embedding=True,
+        position_embedding=False,
     ) -> None:
         super().__init__()
         state_shape = (state_shape[-1],)

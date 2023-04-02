@@ -18,7 +18,7 @@ class MetaTD3(TD3Policy):
         hidden_sizes: List[int] = [32, 16, 8],
         reward_normalization: bool = False,
         n_step: int = 3,
-        gamma: float = 0.99,
+        gamma: float = 1.0,
         tau: float = 0.05,
         actor_lr: float = 1e-4,
         critic_lr: float = 1e-3,
@@ -31,6 +31,7 @@ class MetaTD3(TD3Policy):
         action_bound_method: str = "",
         weight_file: Optional[Path] = None,
         imitation_label_key: str = "label",
+        **kwargs,
     ) -> None:
         self.imitation_label_key = imitation_label_key
         net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)

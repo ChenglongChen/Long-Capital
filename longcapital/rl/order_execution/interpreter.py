@@ -1,5 +1,5 @@
 import itertools
-from typing import Any, Dict, NamedTuple
+from typing import Dict, NamedTuple
 
 import numpy as np
 import pandas as pd
@@ -8,30 +8,38 @@ import torch.nn.functional as F  # noqa
 from gym import spaces
 from longcapital.rl.order_execution.state import TradeStrategyState
 from longcapital.rl.order_execution.utils import filter_stock, softmax
-from longcapital.utils.constant import MASK_VALUE
 from qlib.rl.interpreter import ActionInterpreter, StateInterpreter
 
 
+class DynamicBox(spaces.Box):
+    def contains(self, x) -> bool:
+        from gym import logger
+
+        if not isinstance(x, np.ndarray):
+            logger.warn("Casting input x to numpy array.")
+            x = np.asarray(x, dtype=self.dtype)
+
+        return bool(
+            np.can_cast(x.dtype, self.dtype)
+            # ignore shape check
+            # and x.shape == self.shape
+            and np.all(x >= self.low[: x.shape[0]])
+            and np.all(x <= self.high[: x.shape[0]])
+        )
+
+
 class TradeStrategyStateInterpreter(StateInterpreter[TradeStrategyState, np.ndarray]):
-    def __init__(self, dim, stock_num):
+    def __init__(self, dim, stock_num=300, **kwargs):
         self.dim = dim
         self.stock_num = stock_num
         self.shape = (self.stock_num, self.dim)
 
     def interpret(self, state: TradeStrategyState) -> np.ndarray:
-        feature = state.feature["feature"].values
-        bsz, dim = feature.shape[0], feature.shape[1]
-        # padding
-        if bsz < self.stock_num:
-            pad_size = self.stock_num - bsz
-            feature = np.vstack([feature, MASK_VALUE * np.ones((pad_size, dim))])
-
-        feature = feature[: self.stock_num, :]
-        return np.array(feature, dtype=np.float32)
+        return state.feature["feature"].values.astype(np.float32)
 
     @property
-    def observation_space(self) -> spaces.Box:
-        return spaces.Box(0 - np.inf, np.inf, shape=self.shape, dtype=np.float32)
+    def observation_space(self) -> DynamicBox:
+        return DynamicBox(0 - np.inf, np.inf, shape=self.shape, dtype=np.float32)
 
 
 class TopkDropoutStrategyAction(NamedTuple):
@@ -75,9 +83,11 @@ class TopkDropoutDiscreteDynamicParamStrategyActionInterpreter(
     ) -> TopkDropoutStrategyAction:
         assert 0 <= action <= self.topk
         n_drop = self.n_drop if self.baseline else int(action)
-        signal = state.feature[("feature", self.signal_key)][: self.stock_num].copy()
+        topk = state.initial_state.topk
+        stock_num = state.initial_state.stock_num
+        signal = state.feature[("feature", self.signal_key)][:stock_num].copy()
         return TopkDropoutStrategyAction(
-            signal=signal, topk=self.topk, n_drop=n_drop, hold_thresh=self.hold_thresh
+            signal=signal, topk=topk, n_drop=n_drop, hold_thresh=self.hold_thresh
         )
 
 
@@ -118,7 +128,9 @@ class TopkDropoutDiscreteDynamicSelectionStrategyActionInterpreter(
         self, state: TradeStrategyState, action: int
     ) -> TopkDropoutStrategyAction:
         assert 0 <= action < self.num_combinations
-        signal = state.feature[("feature", self.signal_key)][: self.stock_num].copy()
+        topk = state.initial_state.topk
+        stock_num = state.initial_state.stock_num
+        signal = state.feature[("feature", self.signal_key)][:stock_num].copy()
         if not self.baseline:
             stock_weight_dict = state.trade_executor.trade_account.current_position.get_stock_weight_dict(
                 only_stock=False
@@ -131,7 +143,7 @@ class TopkDropoutDiscreteDynamicSelectionStrategyActionInterpreter(
                 signal.iloc[list(buy)] = 1000
         return TopkDropoutStrategyAction(
             signal=signal,
-            topk=self.topk,
+            topk=topk,
             n_drop=self.n_drop,
             hold_thresh=self.hold_thresh,
         )
@@ -155,13 +167,15 @@ class TopkDropoutContinuousRerankStrategyActionInterpreter(
         if isinstance(action, torch.Tensor):
             action = action.squeeze().detach().numpy()
 
-        signal = state.feature[("feature", self.signal_key)][: self.stock_num].copy()
+        topk = state.initial_state.topk
+        stock_num = state.initial_state.stock_num
+        signal = state.feature[("feature", self.signal_key)][:stock_num].copy()
         if not self.baseline:
             signal.loc[:] = action
 
         return TopkDropoutStrategyAction(
             signal=signal,
-            topk=self.topk,
+            topk=topk,
             n_drop=self.n_drop,
             hold_thresh=self.hold_thresh,
         )
@@ -170,7 +184,7 @@ class TopkDropoutContinuousRerankStrategyActionInterpreter(
 class TopkDropoutContinuousRerankDynamicParamStrategyActionInterpreter(
     TopkDropoutStrategyActionInterpreter
 ):
-    rerank_topk = False
+    rerank_topk = True
 
     @property
     def action_space(self) -> spaces.Box:
@@ -185,11 +199,13 @@ class TopkDropoutContinuousRerankDynamicParamStrategyActionInterpreter(
         if isinstance(action, torch.Tensor):
             action = action.squeeze().detach().numpy()
 
+        topk = state.initial_state.topk
+        stock_num = state.initial_state.stock_num
         n_drop = self.n_drop
         hold_thresh = self.hold_thresh
-        signal = state.feature[("feature", self.signal_key)][: self.stock_num].copy()
+        signal = state.feature[("feature", self.signal_key)][:stock_num].copy()
         if not self.baseline:
-            index = np.argpartition(-action, self.topk)[: self.topk]
+            index = np.argpartition(-action, topk)[:topk]
             if self.rerank_topk:
                 # only select topk, the rest are sorted by original signal (i.e., baseline)
                 signal.iloc[:] = 0
@@ -199,7 +215,7 @@ class TopkDropoutContinuousRerankDynamicParamStrategyActionInterpreter(
                 signal.iloc[:] = action
             # get dynamic params
             hold_thresh = 1
-            position = state.feature[("feature", "position")][: self.stock_num].copy()
+            position = state.feature[("feature", "position")][:stock_num].copy()
             num_position = int(position.sum())
             if num_position > 0:
                 hold = int((index < num_position).sum())
@@ -207,18 +223,21 @@ class TopkDropoutContinuousRerankDynamicParamStrategyActionInterpreter(
             else:
                 n_drop = 0
         return TopkDropoutStrategyAction(
-            signal=signal, topk=self.topk, n_drop=n_drop, hold_thresh=hold_thresh
+            signal=signal, topk=topk, n_drop=n_drop, hold_thresh=hold_thresh
         )
 
 
 class TopkDropoutDiscreteRerankDynamicParamStrategyActionInterpreter(
     TopkDropoutStrategyActionInterpreter
 ):
-    rerank_topk = False
+    rerank_topk = True
 
     @property
     def action_space(self) -> spaces.MultiDiscrete:
-        return spaces.MultiDiscrete([self.stock_num + 1] * self.stock_num)
+        if self.rerank_topk:
+            return spaces.MultiDiscrete([self.stock_num + 1] * self.topk)
+        else:
+            return spaces.MultiDiscrete([self.stock_num + 1] * self.stock_num)
 
     def interpret(
         self, state: TradeStrategyState, action: torch.Tensor
@@ -227,29 +246,31 @@ class TopkDropoutDiscreteRerankDynamicParamStrategyActionInterpreter(
         if isinstance(action, torch.Tensor):
             action = action.squeeze().detach().numpy()
 
+        topk = state.initial_state.topk
+        stock_num = state.initial_state.stock_num
         n_drop = self.n_drop
         hold_thresh = self.hold_thresh
-        signal = state.feature[("feature", self.signal_key)][: self.stock_num].copy()
+        signal = state.feature[("feature", self.signal_key)][:stock_num].copy()
         if not self.baseline:
             if self.rerank_topk:
                 # only select topk, the rest are sorted by original signal (i.e., baseline)
                 signal.iloc[:] = 0
-                signal.iloc[action[: self.topk]] = np.arange(self.topk, 0, -1)
+                signal.iloc[action[:topk]] = np.arange(topk, 0, -1)
             else:
                 # rerank for the whole stock pool
-                signal.iloc[action] = np.arange(self.stock_num, 0, -1)
+                signal.iloc[action] = np.arange(stock_num, 0, -1)
             # get dynamic params
             hold_thresh = 1
-            position = state.feature[("feature", "position")][: self.stock_num].copy()
+            position = state.feature[("feature", "position")][:stock_num].copy()
             num_position = int(position.sum())
             if num_position > 0:
-                hold = int((action[: self.topk] < num_position).sum())
+                hold = int((action[:topk] < num_position).sum())
                 n_drop = num_position - hold
             else:
                 n_drop = 0
         return TopkDropoutStrategyAction(
             signal=signal,
-            topk=self.topk,
+            topk=topk,
             n_drop=n_drop,
             hold_thresh=hold_thresh,
         )
@@ -281,8 +302,7 @@ class TopkDropoutStepByStepDiscreteRerankDynamicParamStrategyActionInterpreter(
             **kwargs,
         )
         self.rerank_topk = True
-        self.rerank_indices = []
-        self.ready = False
+        self.selected_stock_indices = []
 
     @property
     def action_space(self) -> spaces.Discrete:
@@ -295,57 +315,50 @@ class TopkDropoutStepByStepDiscreteRerankDynamicParamStrategyActionInterpreter(
         if isinstance(action, torch.Tensor):
             action = action.squeeze().detach().numpy()
 
+        topk = state.initial_state.topk
+        stock_num = state.initial_state.stock_num
         n_drop = self.n_drop
         hold_thresh = self.hold_thresh
-        signal = state.feature[("feature", self.signal_key)][: self.stock_num].copy()
-        self.ready = True
+        signal = state.feature[("feature", self.signal_key)].copy()
+        ready = True
         if not self.baseline:
-            self.ready = False
-            self.update(action)
-            if self.ready:
-                if self.rerank_topk:
-                    # only select topk, the rest are sorted by original signal (i.e., baseline)
-                    signal.iloc[:] = 0
-                    signal.iloc[self.rerank_indices] = np.arange(self.topk, 0, -1)
-                else:
-                    # rerank for the whole stock pool
-                    signal.iloc[self.rerank_indices] = np.arange(self.stock_num, 0, -1)
+            ready = False
+            self.selected_stock_indices.append(int(action))
+            if len(self.selected_stock_indices) == (
+                topk if self.rerank_topk else stock_num
+            ):
+                ready = True
+                selected_stock_indices = [
+                    s for s in self.selected_stock_indices if s < len(state.feature)
+                ]
+                signal.iloc[:] = 0
+                signal.iloc[selected_stock_indices] = np.arange(
+                    len(selected_stock_indices), 0, -1
+                )
                 # get dynamic params
                 hold_thresh = 1
-                position = state.feature[("feature", "position")][
-                    : self.stock_num
-                ].copy()
+                position = state.feature[("feature", "position")]
                 num_position = int(position.sum())
                 if num_position > 0:
                     hold = int(
-                        (
-                            np.array(self.rerank_indices[: self.topk]) < num_position
-                        ).sum()
+                        (np.array(selected_stock_indices[:topk]) < num_position).sum()
                     )
                     n_drop = num_position - hold
                 else:
                     n_drop = 0
-                self.reset()
-        state.info["ready"] = self.ready
+                self.selected_stock_indices.clear()
+        state.info["ready"] = ready
         return TopkDropoutStrategyAction(
             signal=signal,
-            topk=self.topk,
+            topk=topk,
             n_drop=n_drop,
             hold_thresh=hold_thresh,
-            ready=self.ready,
+            ready=ready,
         )
-
-    def update(self, action: Any):
-        self.rerank_indices.append(int(action))
-        self.ready = len(self.rerank_indices) == (
-            self.topk if self.rerank_topk else self.stock_num
-        )
-
-    def reset(self):
-        self.rerank_indices.clear()
 
 
 class WeightStrategyAction(NamedTuple):
+    signal: pd.DataFrame
     target_weight_position: Dict[str, float]
     ready: bool = True
 
@@ -357,16 +370,20 @@ class WeightStrategyActionInterpreter(
         self,
         topk,
         stock_num,
-        equal_weight=True,
+        only_tradable,
+        equal_weight=False,
         signal_key="signal",
         baseline=False,
+        normalize="sum",
         **kwargs,
     ) -> None:
         self.topk = topk
         self.stock_num = stock_num
+        self.only_tradable = only_tradable
         self.equal_weight = equal_weight
         self.signal_key = signal_key
         self.baseline = baseline
+        self.normalize = normalize
 
     @property
     def action_space(self) -> spaces.Box:
@@ -384,24 +401,31 @@ class WeightStrategyActionInterpreter(
             action = action.squeeze().detach().numpy()
 
         # stocks & weights
-        stocks = state.feature.index[: self.stock_num]
-        signal = state.feature[("feature", self.signal_key)].values
-        weights = signal if self.baseline else action
+        topk = state.initial_state.topk
+        stock_num = state.initial_state.stock_num
+        signal = state.feature[("feature", self.signal_key)][:stock_num].copy()
+        stocks = state.feature.index[:stock_num]
+        weights = signal.values if self.baseline else action
 
         # filter non-tradable stocks
-        stocks, weights = filter_stock(state, stocks, weights)
+        if self.only_tradable:
+            stocks, weights = filter_stock(state, stocks, weights)
 
         if len(stocks) == 0:
             return WeightStrategyAction(target_weight_position={})
 
         # only select topk
-        topk = min(self.topk, len(stocks))
+        topk = min(topk, len(stocks))
         if topk < len(stocks):
             index = np.argpartition(-weights, topk)[:topk]
             stocks = stocks[index]
             weights = weights[index]
 
-        weights = softmax(weights)
+        if self.normalize == "softmax":
+            weights = softmax(weights)
+        else:
+            weights[weights < 0] = 0
+            weights /= weights.sum()
 
         # assign weight
         target_weight_position = {
@@ -409,7 +433,9 @@ class WeightStrategyActionInterpreter(
             for stock, weight in zip(stocks, weights)
         }
 
-        return WeightStrategyAction(target_weight_position=target_weight_position)
+        return WeightStrategyAction(
+            signal=signal, target_weight_position=target_weight_position
+        )
 
 
 class DirectSelectionStrategyActionInterpreter(WeightStrategyActionInterpreter):
@@ -426,11 +452,14 @@ class DirectSelectionStrategyActionInterpreter(WeightStrategyActionInterpreter):
         if isinstance(action, torch.Tensor):
             action = action.squeeze().detach().numpy()
 
-        stocks = state.feature.index[: self.stock_num]
+        stock_num = state.initial_state.stock_num
+        signal = state.feature[("feature", self.signal_key)][:stock_num].copy()
+        stocks = state.feature.index[:stock_num]
         weights = np.ones(len(stocks)) if self.baseline else action
 
         # filter non-tradable stocks
-        stocks, weights = filter_stock(state, stocks, weights)
+        if self.only_tradable:
+            stocks, weights = filter_stock(state, stocks, weights)
 
         if len(stocks) == 0:
             return WeightStrategyAction(target_weight_position={})
@@ -444,4 +473,70 @@ class DirectSelectionStrategyActionInterpreter(WeightStrategyActionInterpreter):
             stock: 1.0 / len(stocks) for stock, weight in zip(stocks, weights)
         }
 
-        return WeightStrategyAction(target_weight_position=target_weight_position)
+        return WeightStrategyAction(
+            signal=signal, target_weight_position=target_weight_position
+        )
+
+
+class StepByStepStrategyActionInterpreter(
+    ActionInterpreter[TradeStrategyState, np.ndarray, Dict]
+):
+    def __init__(
+        self,
+        topk,
+        only_tradable,
+        stock_num=300,
+        signal_key="signal",
+        baseline=False,
+        **kwargs,
+    ) -> None:
+        self.topk = topk
+        self.stock_num = stock_num
+        self.only_tradable = only_tradable
+        self.signal_key = signal_key
+        self.baseline = baseline
+        self.selected_stock_indices = []
+
+    @property
+    def action_space(self) -> spaces.Discrete:
+        return spaces.Discrete(self.stock_num + 1)
+
+    def interpret(
+        self, state: TradeStrategyState, action: torch.Tensor
+    ) -> WeightStrategyAction:
+
+        if isinstance(action, torch.Tensor):
+            action = action.squeeze().detach().numpy()
+
+        topk = state.initial_state.topk
+        stock_num = state.initial_state.stock_num
+        signal = state.feature[("feature", self.signal_key)][:stock_num].copy()
+        stocks = []
+        ready = False
+        if self.baseline:
+            selected_stock_indices = np.argpartition(-signal.values, topk)[:topk]
+            stocks = state.feature.index[selected_stock_indices]
+            ready = True
+        else:
+            self.selected_stock_indices.append(int(action))
+            if len(self.selected_stock_indices) == topk:
+                selected_stock_indices = [
+                    s
+                    for s in self.selected_stock_indices
+                    if s < len(state.feature.index)
+                ]
+                stocks = state.feature.index[selected_stock_indices]
+                self.selected_stock_indices.clear()
+                ready = True
+
+        # filter non-tradable stocks
+        if self.only_tradable:
+            stocks = filter_stock(state, stocks)
+
+        # assign weight
+        w = 1.0 / topk
+        target_weight_position = dict(zip(stocks, [w] * len(stocks)))
+
+        return WeightStrategyAction(
+            signal=signal, target_weight_position=target_weight_position, ready=ready
+        )

@@ -2,9 +2,10 @@ from typing import Any
 
 import torch.nn.functional as F  # noqa
 from longcapital.rl.order_execution.state import (
-    TradeStrategyInitiateState,
+    TradeStrategyInitialState,
     TradeStrategyState,
 )
+from longcapital.rl.order_execution.strategy import BaseTradeStrategy
 from longcapital.rl.order_execution.utils import random_daterange
 from qlib.backtest import create_account_instance, get_exchange
 from qlib.backtest.utils import CommonInfrastructure
@@ -13,12 +14,12 @@ from qlib.utils import init_instance_by_config
 
 
 class TradeStrategySimulator(
-    Simulator[TradeStrategyInitiateState, TradeStrategyState, Any]
+    Simulator[TradeStrategyInitialState, TradeStrategyState, Any]
 ):
     def __init__(
         self,
-        trade_strategy: Any,
-        initial_state: TradeStrategyInitiateState,
+        trade_strategy: BaseTradeStrategy,
+        initial_state: TradeStrategyInitialState,
         benchmark: str = "SH000300",
         account: float = 100000000,
         pos_type: str = "Position",
@@ -99,6 +100,7 @@ class TradeStrategySimulator(
         # reset for trade_strategy
         self.trade_strategy.reset_common_infra(self.common_infra)
         self.trade_strategy.reset_level_infra(self.trade_executor.get_level_infra())
+        self.trade_strategy.reset_initial_state(initial_state)
 
     def step(self, action: Any) -> None:
         if action.ready:
@@ -114,6 +116,7 @@ class TradeStrategySimulator(
             trade_executor=self.trade_executor,
             trade_strategy=self.trade_strategy,
             feature=self.trade_strategy.get_feature(),
+            initial_state=self.trade_strategy.initial_state,
         )
 
     def done(self) -> bool:

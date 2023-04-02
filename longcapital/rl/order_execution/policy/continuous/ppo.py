@@ -21,7 +21,7 @@ class MetaPPO(PPOPolicy):
         action_space: gym.Space,
         hidden_sizes: List[int] = [32, 16, 8],
         lr: float = 1e-4,
-        discount_factor: float = 0.95,
+        discount_factor: float = 1.0,
         max_grad_norm: float = 100.0,
         reward_normalization: bool = True,
         advantage_normalization: bool = True,
@@ -29,9 +29,9 @@ class MetaPPO(PPOPolicy):
         dual_clip: float = None,
         eps_clip: float = 0.3,
         value_clip: bool = True,
-        vf_coef: float = 0.5,
-        ent_coef: float = 0.01,
-        gae_lambda: float = 1.0,
+        vf_coef: float = 0.0,
+        ent_coef: float = 0.0,
+        gae_lambda: float = 0.0,
         max_batch_size: int = 256,
         deterministic_eval: bool = True,
         max_action: float = 1.0,
@@ -43,6 +43,7 @@ class MetaPPO(PPOPolicy):
         action_bound_method: str = "",
         imitation_label_key: str = "label",
         weight_file: Optional[Path] = None,
+        **kwargs,
     ) -> None:
 
         self.imitation_label_key = imitation_label_key

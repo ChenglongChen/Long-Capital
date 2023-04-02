@@ -5,6 +5,17 @@ import torch.nn.functional as F  # noqa
 from qlib.strategy.base import BaseStrategy
 
 
+class TradeStrategyInitialState(NamedTuple):
+    start_time: str
+    end_time: str
+    topk: int
+    stock_num: int = 20
+    stock_sampling_method: str = "daily"
+    stock_sorting: bool = True
+    sample_date: bool = False
+    skip_nontradable_start_time: bool = False
+
+
 class TradeStrategyState(NamedTuple):
     # NOTE:
     # - for avoiding recursive import
@@ -13,12 +24,6 @@ class TradeStrategyState(NamedTuple):
 
     trade_executor: BaseExecutor
     trade_strategy: BaseStrategy
+    initial_state: TradeStrategyInitialState
     feature: pd.DataFrame
     info: Dict = {"ready": True}
-
-
-class TradeStrategyInitiateState(NamedTuple):
-    start_time: str
-    end_time: str
-    sample_date: bool = False
-    skip_nontradable_start_time: bool = False
