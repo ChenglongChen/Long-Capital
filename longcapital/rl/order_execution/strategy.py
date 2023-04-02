@@ -128,6 +128,16 @@ class BaseTradeStrategy(BaseStrategy):
             feature = pd.merge(feature, position_df, on="instrument", how="left")
             feature.fillna(0, inplace=True)
 
+        # selected flag
+        feature[("feature", "selected")] = 0
+        if hasattr(self.action_interpreter, "selected_stock_indices"):
+            selected_stock_indices = [
+                s
+                for s in self.action_interpreter.selected_stock_indices
+                if s < len(feature)
+            ]
+            feature[("feature", "selected")].iloc[selected_stock_indices] = 1
+
         # sort to make sure the ranking distribution is similar across different dates
         if self.initial_state.stock_sorting:
             feature.sort_values(
@@ -403,7 +413,7 @@ class TopkDropoutContinuousRerankDynamicParamStrategy(TopkDropoutStrategy):
 
 
 class TopkDropoutDiscreteRerankDynamicParamStrategy(TopkDropoutStrategy):
-    policy_cls = discrete.MetaPPO
+    policy_cls = discrete.TopkMetaPPO
     action_interpreter_cls = (
         TopkDropoutDiscreteRerankDynamicParamStrategyActionInterpreter
     )
@@ -413,67 +423,13 @@ class TopkDropoutDiscreteRerankDynamicParamStrategy(TopkDropoutStrategy):
 
 
 class TopkDropoutStepByStepDiscreteRerankDynamicParamStrategy(TopkDropoutStrategy):
-    policy_cls = discrete.MetaPPO
+    policy_cls = discrete.StepByStepMetaPPO
     action_interpreter_cls = (
         TopkDropoutStepByStepDiscreteRerankDynamicParamStrategyActionInterpreter
     )
 
-    def __init__(
-        self,
-        *,
-        topk,
-        n_drop,
-        hold_thresh,
-        only_tradable,
-        dim,
-        stock_num,
-        signal_key="signal",
-        imitation_label_key="label",
-        feature_n_step=1,
-        position_feature_cols=["count_day"],
-        checkpoint_path=None,
-        **kwargs,
-    ):
-        kwargs.update({"policy_kwargs": {"step_by_step": True}})
-        super().__init__(
-            topk=topk,
-            n_drop=n_drop,
-            hold_thresh=hold_thresh,
-            only_tradable=only_tradable,
-            dim=dim + 1,  # add 1 dim for `selected` flag
-            stock_num=stock_num,
-            signal_key=signal_key,
-            imitation_label_key=imitation_label_key,
-            feature_n_step=feature_n_step,
-            position_feature_cols=position_feature_cols,
-            checkpoint_path=checkpoint_path,
-            **kwargs,
-        )
-
     def __str__(self):
         return "TopkDropoutStepByStepDiscreteRerankDynamicParamStrategy"
-
-    def _get_feature(
-        self,
-        feature=None,
-        pred_start_time: Optional[pd.Timestamp] = None,
-        pred_end_time: Optional[pd.Timestamp] = None,
-    ) -> Union[pd.DataFrame, None]:
-        feature = super(
-            TopkDropoutStepByStepDiscreteRerankDynamicParamStrategy, self
-        )._get_feature(
-            feature=feature,
-            pred_start_time=pred_start_time,
-            pred_end_time=pred_end_time,
-        )
-        feature[("feature", "selected")] = 0
-        selected_stock_indices = [
-            s
-            for s in self.action_interpreter.selected_stock_indices
-            if s < len(feature)
-        ]
-        feature[("feature", "selected")].iloc[selected_stock_indices] = 1
-        return feature
 
 
 class TopkDropoutDiscreteDynamicSelectionStrategy(TopkDropoutStrategy):
@@ -497,7 +453,7 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
         topk,
         dim,
         stock_num,
-        equal_weight=True,
+        equal_weight=False,
         signal_key="signal",
         imitation_label_key="label",
         feature_n_step=1,
@@ -606,56 +562,17 @@ class DirectSelectionStrategy(WeightStrategy):
 
 
 class StepByStepStrategy(WeightStrategy):
-    policy_cls = discrete.MetaPPO
+    policy_cls = discrete.StepByStepMetaPPO
     action_interpreter_cls = StepByStepStrategyActionInterpreter
-
-    def __init__(
-        self,
-        *,
-        topk,
-        dim,
-        stock_num,
-        equal_weight=True,
-        signal_key="signal",
-        imitation_label_key="label",
-        feature_n_step=1,
-        position_feature_cols=["count_day"],
-        checkpoint_path=None,
-        **kwargs,
-    ):
-        kwargs.update({"policy_kwargs": {"step_by_step": True}})
-        super().__init__(
-            topk=topk,
-            dim=dim + 1,  # add 1 dim for `selected` flag
-            stock_num=300,
-            equal_weight=equal_weight,
-            signal_key=signal_key,
-            imitation_label_key=imitation_label_key,
-            feature_n_step=feature_n_step,
-            position_feature_cols=position_feature_cols,
-            checkpoint_path=checkpoint_path,
-            **kwargs,
-        )
 
     def __str__(self):
         return "StepByStepStrategy"
 
-    def _get_feature(
-        self,
-        feature=None,
-        pred_start_time: Optional[pd.Timestamp] = None,
-        pred_end_time: Optional[pd.Timestamp] = None,
-    ) -> Union[pd.DataFrame, None]:
-        feature = super(StepByStepStrategy, self)._get_feature(
-            feature=feature,
-            pred_start_time=pred_start_time,
-            pred_end_time=pred_end_time,
-        )
-        feature[("feature", "selected")] = 0
-        selected_stock_indices = [
-            s
-            for s in self.action_interpreter.selected_stock_indices
-            if s < len(feature)
-        ]
-        feature[("feature", "selected")].iloc[selected_stock_indices] = 1
-        return feature
+
+class DiscreteWeightStrategy(WeightStrategy):
+    policy_cls: BasePolicy = discrete.WeightMetaPPO
+    state_interpreter_cls: StateInterpreter = TradeStrategyStateInterpreter
+    action_interpreter_cls: ActionInterpreter = WeightStrategyActionInterpreter
+
+    def __str__(self):
+        return "DiscreteWeightStrategy"

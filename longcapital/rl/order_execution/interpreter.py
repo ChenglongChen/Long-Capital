@@ -372,6 +372,7 @@ class WeightStrategyActionInterpreter(
         equal_weight=True,
         signal_key="signal",
         baseline=False,
+        normalize="sum",
         **kwargs,
     ) -> None:
         self.topk = topk
@@ -379,6 +380,7 @@ class WeightStrategyActionInterpreter(
         self.equal_weight = equal_weight
         self.signal_key = signal_key
         self.baseline = baseline
+        self.normalize = normalize
 
     @property
     def action_space(self) -> spaces.Box:
@@ -415,7 +417,11 @@ class WeightStrategyActionInterpreter(
             stocks = stocks[index]
             weights = weights[index]
 
-        weights = softmax(weights)
+        if self.normalize == "softmax":
+            weights = softmax(weights)
+        else:
+            weights[weights < 0] = 0
+            weights /= weights.sum()
 
         # assign weight
         target_weight_position = {
