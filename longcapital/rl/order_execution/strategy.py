@@ -471,6 +471,18 @@ class TopkDropoutDiscreteWeightContinuousRerankDynamicParamStrategy(
         return "TopkDropoutDiscreteWeightContinuousRerankDynamicParamStrategy"
 
 
+class TopkDropoutDiscreteBinaryContinuousRerankDynamicParamStrategy(
+    TopkDropoutStrategy
+):
+    policy_cls = discrete.MultiBinaryMetaPPO
+    action_interpreter_cls = (
+        TopkDropoutContinuousRerankDynamicParamStrategyActionInterpreter
+    )
+
+    def __str__(self):
+        return "TopkDropoutDiscreteBinaryContinuousRerankDynamicParamStrategy"
+
+
 class TopkDropoutStepByStepDiscreteRerankDynamicParamStrategy(TopkDropoutStrategy):
     policy_cls = discrete.StepByStepMetaPPO
     action_interpreter_cls = (
@@ -653,3 +665,11 @@ class DiscreteWeightStrategy(WeightStrategy):
 
     def __str__(self):
         return "DiscreteWeightStrategy"
+
+
+class DiscreteBinaryWeightStrategy(WeightStrategy):
+    policy_cls = discrete.MultiBinaryMetaPPO
+    action_interpreter_cls = WeightStrategyActionInterpreter
+
+    def __str__(self):
+        return "DiscreteBinaryWeightStrategy"

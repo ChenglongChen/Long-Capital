@@ -1,1 +1,8 @@
-from .ppo import PPO, MetaPPO, StepByStepMetaPPO, TopkMetaPPO, WeightMetaPPO  # noqa
+from .ppo import (  # noqa
+    PPO,
+    MetaPPO,
+    MultiBinaryMetaPPO,
+    StepByStepMetaPPO,
+    TopkMetaPPO,
+    WeightMetaPPO,
+)
