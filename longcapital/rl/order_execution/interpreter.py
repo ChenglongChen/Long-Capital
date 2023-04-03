@@ -454,12 +454,6 @@ class WeightStrategyActionInterpreter(
         )
 
 
-class DirectSelectionStrategyActionInterpreter(WeightStrategyActionInterpreter):
-    @property
-    def action_space(self) -> spaces.MultiBinary:
-        return spaces.MultiBinary((self.stock_num,))
-
-
 class StepByStepStrategyActionInterpreter(WeightStrategyActionInterpreter):
     @property
     def action_space(self) -> spaces.Discrete:

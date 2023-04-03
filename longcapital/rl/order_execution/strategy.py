@@ -8,7 +8,6 @@ import torch.nn.functional as F  # noqa
 from longcapital.rl.order_execution.aux_info import ImitationLabelCollector
 from longcapital.rl.order_execution.buffer import FeatureBuffer
 from longcapital.rl.order_execution.interpreter import (
-    DirectSelectionStrategyActionInterpreter,
     StepByStepStrategyActionInterpreter,
     TopkDropoutContinuousRerankDynamicParamStrategyActionInterpreter,
     TopkDropoutContinuousRerankStrategyActionInterpreter,
@@ -641,14 +640,6 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
         if not action:
             action = self.action()
         return action.target_weight_position
-
-
-class DirectSelectionStrategy(WeightStrategy):
-    policy_cls = discrete.MetaPPO
-    action_interpreter_cls = DirectSelectionStrategyActionInterpreter
-
-    def __str__(self):
-        return "DirectSelectionStrategy"
 
 
 class StepByStepStrategy(WeightStrategy):
