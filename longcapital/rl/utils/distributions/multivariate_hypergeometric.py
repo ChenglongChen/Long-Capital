@@ -1,8 +1,9 @@
 import torch
 from longcapital.utils.constant import EPS
+from torch.distributions import Categorical
 
 
-class MultivariateHypergeometric(torch.distributions.Categorical):
+class MultivariateHypergeometric(Categorical):
     """Sample ranking index according to Softmax distribution"""
 
     def __init__(self, probs=None, logits=None, validate_args=None, topk=None):

@@ -11,7 +11,7 @@ from tianshou.data import Batch, to_torch
 from tianshou.policy import PPOPolicy
 from tianshou.utils.net.common import ActorCritic
 from torch import nn
-from torch.distributions import Independent, Normal
+from torch.distributions import Distribution, Independent, Normal
 
 
 class MetaPPO(PPOPolicy):
@@ -71,7 +71,7 @@ class MetaPPO(PPOPolicy):
 
         # replace DiagGuassian with Independent(Normal) which is equivalent
         # pass *logits to be consistent with policy.forward
-        def dist(*logits) -> torch.distributions.Distribution:
+        def dist(*logits) -> Distribution:
             return Independent(Normal(*logits), 1)
 
         super().__init__(

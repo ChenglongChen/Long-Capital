@@ -12,6 +12,13 @@ from tianshou.data import Batch
 from tianshou.policy import PPOPolicy
 from tianshou.utils.net.common import ActorCritic
 from tianshou.utils.net.discrete import Actor, Critic
+from torch.distributions import (
+    Bernoulli,
+    Categorical,
+    Distribution,
+    Independent,
+    Multinomial,
+)
 
 
 class PPO(PPOPolicy):
@@ -56,7 +63,7 @@ class PPO(PPOPolicy):
             actor,
             critic,
             optim,
-            torch.distributions.Categorical,
+            Categorical,
             discount_factor=discount_factor,
             max_grad_norm=max_grad_norm,
             reward_normalization=reward_normalization,
@@ -131,7 +138,7 @@ class StepByStepMetaPPO(PPOPolicy):
             actor,
             critic,
             optim,
-            torch.distributions.Categorical,
+            Categorical,
             discount_factor=discount_factor,
             max_grad_norm=max_grad_norm,
             reward_normalization=reward_normalization,
@@ -223,7 +230,7 @@ class TopkMetaPPO(PPOPolicy):
         actor_critic = ActorCritic(actor, critic)
         optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
-        def dist(logits) -> torch.distributions.Distribution:
+        def dist(logits) -> Distribution:
             return MultivariateHypergeometric(probs=logits, topk=self.topk)
 
         super().__init__(
@@ -273,9 +280,9 @@ class TopkMetaPPO(PPOPolicy):
         return "TopkMetaPPO"
 
 
-class MyMultinomial(torch.distributions.Multinomial):
+class MyMultinomial(Multinomial):
     def entropy(self):
-        return torch.tensor(0.0)
+        return torch.zeros(self.batch_shape)
 
 
 class WeightMetaPPO(PPOPolicy):
@@ -324,7 +331,7 @@ class WeightMetaPPO(PPOPolicy):
         actor_critic = ActorCritic(actor, critic)
         optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
-        def dist(logits) -> torch.distributions.Distribution:
+        def dist(logits) -> Distribution:
             return MyMultinomial(total_count=total_count, probs=logits)
 
         super().__init__(
@@ -420,11 +427,16 @@ class MultiBinaryMetaPPO(PPOPolicy):
         actor_critic = ActorCritic(actor, critic)
         optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
+        # replace DiagGuassian with Independent(Normal) which is equivalent
+        # pass *logits to be consistent with policy.forward
+        def dist(probs) -> Distribution:
+            return Independent(Bernoulli(probs=probs), 1)
+
         super().__init__(
             actor,
             critic,
             optim,
-            torch.distributions.Bernoulli,
+            dist,
             discount_factor=discount_factor,
             max_grad_norm=max_grad_norm,
             reward_normalization=reward_normalization,
