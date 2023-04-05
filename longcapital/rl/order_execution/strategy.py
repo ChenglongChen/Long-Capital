@@ -77,14 +77,8 @@ class BaseTradeStrategy(BaseStrategy):
         pred_start_time: Optional[pd.Timestamp] = None,
         pred_end_time: Optional[pd.Timestamp] = None,
     ) -> Any:
-        state = TradeStrategyState(
-            trade_executor=self.executor,
-            trade_strategy=self,
-            feature=self.get_feature(
-                pred_start_time=pred_start_time,
-                pred_end_time=pred_end_time,
-            ),
-            initial_state=self.initial_state,
+        state = self.get_state(
+            pred_start_time=pred_start_time, pred_end_time=pred_end_time
         )
         obs = [{"obs": self.state_interpreter.interpret(state), "info": {}}]
         policy_out = self.policy(Batch(obs))
@@ -93,6 +87,26 @@ class BaseTradeStrategy(BaseStrategy):
         else:
             action = self.action_interpreter.interpret(state, policy_out.act)
         return action
+
+    def get_state(
+        self,
+        pred_start_time: Optional[pd.Timestamp] = None,
+        pred_end_time: Optional[pd.Timestamp] = None,
+    ) -> TradeStrategyState:
+        feature = self.get_feature(
+            pred_start_time=pred_start_time,
+            pred_end_time=pred_end_time,
+        )
+        state = TradeStrategyState(
+            trade_executor=self.executor,
+            trade_strategy=self,
+            initial_state=self.initial_state,
+            feature=feature,
+            label=self.get_label_from_feature(feature),
+            signal=self.get_signal_from_feature(feature),
+            position=self.get_position_from_feature(feature),
+        )
+        return state
 
     def get_feature(
         self,
@@ -161,6 +175,22 @@ class BaseTradeStrategy(BaseStrategy):
             feature = pd.concat([feature, padding], axis=0)
 
         return feature
+
+    def get_label_from_feature(self, feature: pd.DataFrame) -> pd.DataFrame:
+        label = feature[self.imitation_label_key][: self.initial_state.stock_num].copy()
+        return label
+
+    def get_signal_from_feature(self, feature: pd.DataFrame) -> pd.DataFrame:
+        signal = feature[("feature", self.signal_key)][
+            : self.initial_state.stock_num
+        ].copy()
+        return signal
+
+    def get_position_from_feature(self, feature: pd.DataFrame) -> pd.DataFrame:
+        position = feature[("feature", "position")][
+            : self.initial_state.stock_num
+        ].copy()
+        return position
 
     def trade(self) -> pd.DataFrame:
         trade_step = self.trade_calendar.get_trade_len() - 1
@@ -306,6 +336,9 @@ class BaseTradeStrategy(BaseStrategy):
                 )
             return self.stock_pool
 
+    def reset_policy(self, policy: BasePolicy):
+        self.policy = policy
+
 
 class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
     policy_cls: BasePolicy
@@ -316,13 +349,14 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         self,
         *,
         topk,
-        n_drop,
-        hold_thresh,
-        only_tradable,
         dim,
         stock_num,
+        only_tradable,
+        n_drop,
+        hold_thresh,
         stock_sampling_method="daily",
         stock_sorting=True,
+        equal_weight=False,
         start_time=None,
         end_time=None,
         rerank_topk=True,
@@ -353,6 +387,7 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         self.signal_key = signal_key
         self.stock_sampling_method = stock_sampling_method
         self.stock_sorting = stock_sorting
+        self.equal_weight = equal_weight
         self.pred_score = None
 
         self.state_interpreter = self.state_interpreter_cls(
@@ -378,9 +413,7 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
             baseline=True,
             **action_interpreter_kwargs,
         )
-        self.aux_info_collector = ImitationLabelCollector(
-            stock_num=stock_num, label_key=imitation_label_key
-        )
+        self.aux_info_collector = ImitationLabelCollector()
         self.policy = self.policy_cls(
             obs_space=self.state_interpreter.observation_space,
             action_space=self.action_interpreter.action_space,
@@ -514,6 +547,8 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
         dim,
         stock_num,
         only_tradable,
+        n_drop=None,  # placeholder
+        hold_thresh=None,  # placeholder
         stock_sampling_method="daily",
         stock_sorting=True,
         equal_weight=False,
@@ -542,6 +577,8 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
         self.stock_sampling_method = stock_sampling_method
         self.stock_sorting = stock_sorting
         self.only_tradable = only_tradable
+        self.n_drop = n_drop
+        self.hold_thresh = hold_thresh
 
         self.state_interpreter = self.state_interpreter_cls(
             dim=dim * feature_n_step,
@@ -566,9 +603,7 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
             baseline=True,
             **action_interpreter_kwargs,
         )
-        self.aux_info_collector = ImitationLabelCollector(
-            stock_num=stock_num, label_key=imitation_label_key
-        )
+        self.aux_info_collector = ImitationLabelCollector()
         self.policy = self.policy_cls(
             obs_space=self.state_interpreter.observation_space,
             action_space=self.action_interpreter.action_space,

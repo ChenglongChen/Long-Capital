@@ -32,11 +32,9 @@ class MetaSAC(SACPolicy):
         action_scaling: bool = False,
         action_bound_method: str = "",
         weight_file: Optional[Path] = None,
-        imitation_label_key: str = "label",
         **kwargs,
     ) -> None:
-        self.imitation_label_key = imitation_label_key
-        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
+        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=False)
         actor = MetaActorProb(
             net,
             action_space.shape,

@@ -6,14 +6,13 @@ from torch.distributions import Categorical
 class MultivariateHypergeometric(Categorical):
     """Sample ranking index according to Softmax distribution"""
 
-    def __init__(self, probs=None, logits=None, validate_args=None, topk=None):
+    def __init__(self, probs=None, logits=None, validate_args=None):
         super().__init__(probs, logits, validate_args)
-        self._topk = topk if topk else self._num_events
-        self._event_shape = (self._topk,)
+        self._event_shape = (self._num_events,)
 
     def sample(self, sample_shape=torch.Size(), replacement=False):
         probs_2d = self.probs.reshape(-1, self._num_events)
-        samples_2d = torch.multinomial(probs_2d, self._topk, replacement)
+        samples_2d = torch.multinomial(probs_2d, self._num_events, replacement)
         return samples_2d
 
     def log_prob(self, value):

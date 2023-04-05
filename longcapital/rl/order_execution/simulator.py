@@ -76,6 +76,15 @@ class TradeStrategySimulator(
             executor, accept_types=BaseExecutor
         )
 
+        # reset simulator and trade_strategy
+        self.reset(initial_state, start_time, end_time)
+        self.trade_strategy.reset_common_infra(self.common_infra)
+        self.trade_strategy.reset_level_infra(self.trade_executor.get_level_infra())
+        self.trade_strategy.reset_initial_state(initial_state)
+
+    def reset(
+        self, initial_state: TradeStrategyInitialState, start_time: str, end_time: str
+    ) -> None:
         # move necessary steps forward to the first tradable time
         self.trade_executor.reset(start_time=start_time, end_time=end_time)
         if initial_state.skip_nontradable_start_time:
@@ -97,11 +106,6 @@ class TradeStrategySimulator(
         end_time = self.trade_executor.trade_calendar.end_time
         print(f"start_time: {start_time}, end_time: {end_time}")
 
-        # reset for trade_strategy
-        self.trade_strategy.reset_common_infra(self.common_infra)
-        self.trade_strategy.reset_level_infra(self.trade_executor.get_level_infra())
-        self.trade_strategy.reset_initial_state(initial_state)
-
     def step(self, action: Any) -> None:
         if action.ready:
             trade_decisions = self.trade_strategy.generate_trade_decision(action=action)
@@ -112,12 +116,7 @@ class TradeStrategySimulator(
                     print("Execution result:", len(_execute_result))
 
     def get_state(self) -> TradeStrategyState:
-        return TradeStrategyState(
-            trade_executor=self.trade_executor,
-            trade_strategy=self.trade_strategy,
-            feature=self.trade_strategy.get_feature(),
-            initial_state=self.trade_strategy.initial_state,
-        )
+        return self.trade_strategy.get_state()
 
     def done(self) -> bool:
         return self.trade_executor.finished()

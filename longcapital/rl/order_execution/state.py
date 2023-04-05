@@ -26,4 +26,7 @@ class TradeStrategyState(NamedTuple):
     trade_strategy: BaseStrategy
     initial_state: TradeStrategyInitialState
     feature: pd.DataFrame
+    label: pd.DataFrame
+    signal: pd.DataFrame
+    position: pd.DataFrame
     info: Dict = {"ready": True}

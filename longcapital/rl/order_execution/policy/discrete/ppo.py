@@ -36,9 +36,9 @@ class PPO(PPOPolicy):
         dual_clip: float = None,
         eps_clip: float = 0.3,
         value_clip: bool = True,
-        vf_coef: float = 0.0,
-        ent_coef: float = 0.0,
-        gae_lambda: float = 0.0,
+        vf_coef: float = 0.5,
+        ent_coef: float = 0.01,
+        gae_lambda: float = 1.0,
         action_scaling: bool = False,
         action_bound_method: str = "",
         max_batch_size: int = 256,
@@ -105,9 +105,9 @@ class StepByStepMetaPPO(PPOPolicy):
         dual_clip: float = None,
         eps_clip: float = 0.3,
         value_clip: bool = True,
-        vf_coef: float = 0.0,
-        ent_coef: float = 0.0,
-        gae_lambda: float = 0.0,
+        vf_coef: float = 0.5,
+        ent_coef: float = 0.01,
+        gae_lambda: float = 1.0,
         action_scaling: bool = False,
         action_bound_method: str = "",
         max_batch_size: int = 256,
@@ -116,7 +116,7 @@ class StepByStepMetaPPO(PPOPolicy):
         **kwargs,
     ) -> None:
 
-        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
+        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=False)
         actor = MetaActor(
             net,
             [action_space.n],
@@ -200,9 +200,9 @@ class TopkMetaPPO(PPOPolicy):
         dual_clip: float = None,
         eps_clip: float = 0.3,
         value_clip: bool = True,
-        vf_coef: float = 0.0,
-        ent_coef: float = 0.0,
-        gae_lambda: float = 0.0,
+        vf_coef: float = 0.5,
+        ent_coef: float = 0.01,
+        gae_lambda: float = 1.0,
         action_scaling: bool = False,
         action_bound_method: str = "",
         max_batch_size: int = 256,
@@ -212,7 +212,7 @@ class TopkMetaPPO(PPOPolicy):
     ) -> None:
         self.topk = kwargs.get("topk", 1)
 
-        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
+        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=False)
         actor = MetaActor(
             net,
             action_space.shape,
@@ -231,7 +231,8 @@ class TopkMetaPPO(PPOPolicy):
         optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
         def dist(logits) -> Distribution:
-            return MultivariateHypergeometric(probs=logits, topk=self.topk)
+            """we have dynamic topk in sampling, so disable validate_args"""
+            return MultivariateHypergeometric(probs=logits, validate_args=False)
 
         super().__init__(
             actor,
@@ -271,9 +272,15 @@ class TopkMetaPPO(PPOPolicy):
         else:
             dist = self.dist_fn(logits)
         if self._deterministic_eval and not self.training:
-            act = torch.argsort(logits, dim=1, descending=True)[:, : self.topk]
+            act = torch.argsort(logits, dim=1, descending=True)
         else:
             act = dist.sample()
+        # only select topk
+        if hasattr(batch.info, "aux_info") and "topk" in batch.info.aux_info:
+            topk = int(batch.info.aux_info["topk"].flatten()[0])
+        else:
+            topk = self.topk
+        act = act[:, :topk]
         return Batch(logits=logits, act=act, state=hidden, dist=dist)
 
     def __str__(self):
@@ -301,9 +308,9 @@ class WeightMetaPPO(PPOPolicy):
         dual_clip: float = None,
         eps_clip: float = 0.3,
         value_clip: bool = True,
-        vf_coef: float = 0.0,
-        ent_coef: float = 0.0,
-        gae_lambda: float = 0.0,
+        vf_coef: float = 0.5,
+        ent_coef: float = 0.01,
+        gae_lambda: float = 1.0,
         action_scaling: bool = False,
         action_bound_method: str = "",
         max_batch_size: int = 256,
@@ -313,7 +320,7 @@ class WeightMetaPPO(PPOPolicy):
     ) -> None:
         total_count = kwargs.get("topk", 10)
 
-        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
+        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=False)
         actor = MetaActor(
             net,
             action_space.shape,
@@ -397,9 +404,9 @@ class MultiBinaryMetaPPO(PPOPolicy):
         dual_clip: float = None,
         eps_clip: float = 0.3,
         value_clip: bool = True,
-        vf_coef: float = 0.0,
-        ent_coef: float = 0.0,
-        gae_lambda: float = 0.0,
+        vf_coef: float = 0.5,
+        ent_coef: float = 0.01,
+        gae_lambda: float = 1.0,
         action_scaling: bool = False,
         action_bound_method: str = "",
         max_batch_size: int = 256,
@@ -408,7 +415,7 @@ class MultiBinaryMetaPPO(PPOPolicy):
         **kwargs,
     ) -> None:
 
-        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
+        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=False)
         actor = MetaActor(
             net,
             action_space.shape,
