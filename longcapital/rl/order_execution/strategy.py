@@ -215,7 +215,7 @@ class BaseTradeStrategy(BaseStrategy):
                 return_decision=False,
             )
 
-            action_df = action.signal.reset_index()
+            action_df = action.signal.to_frame().reset_index()
             action_df.columns = ["instrument", "signal"]
 
             order_df = pd.DataFrame(order_list)[["stock_id", "direction"]]
@@ -228,8 +228,9 @@ class BaseTradeStrategy(BaseStrategy):
                 weight_df.index.rename("instrument", inplace=True)
             else:
                 weight_df = pd.DataFrame(
-                    1 / len(order_df), columns=["weight"], index=order_df.index
+                    1 / len(order_df), columns=["weight"], index=order_df.instrument
                 )
+            weight_df.reset_index(inplace=True)
 
             action_df = pd.merge(action_df, order_df, on="instrument", how="left")
             action_df = pd.merge(action_df, weight_df, on="instrument", how="left")
