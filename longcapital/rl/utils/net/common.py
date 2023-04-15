@@ -223,11 +223,11 @@ class MetaNet(nn.Module):
         )
         bsz, ch, d = obs.size(0), obs.size(1), obs.size(2)
         mask = obs.eq(MASK_VALUE).all(2).float()
-        obs = obs.view(-1, d)
+        obs = obs.reshape(-1, d)
         logits = self.mlp(obs)
         if self.softmax:
             logits = torch.softmax(logits, dim=-1)
-        logits = logits.view(bsz, ch, -1)
+        logits = logits.reshape(bsz, ch, -1)
         if self.position_embedding:
             logits = self.pe(logits)
         if self.self_attn:

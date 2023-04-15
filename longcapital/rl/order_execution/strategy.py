@@ -192,7 +192,24 @@ class BaseTradeStrategy(BaseStrategy):
         ].copy()
         return position
 
-    def trade(self) -> pd.DataFrame:
+    def trade(self, baseline=False) -> pd.DataFrame:
+        decision_df = self._trade()
+        if baseline:
+            decision_df.drop(["direction", "weight", "signal"], axis=1, inplace=True)
+            decision_df.columns = [
+                "instrument",
+                "direction",
+                "weight",
+                "signal",
+                "position",
+            ]
+            decision_df.sort_values(
+                ["position", "signal"], ascending=False, inplace=True
+            )
+            decision_df.reset_index(drop=True, inplace=True)
+        return decision_df
+
+    def _trade(self) -> pd.DataFrame:
         trade_step = self.trade_calendar.get_trade_len() - 1
         pred_start_time = self.trade_calendar.get_step_start_time(trade_step=trade_step)
         pred_end_time = epsilon_change(pred_start_time + pd.Timedelta(days=1))
@@ -202,6 +219,7 @@ class BaseTradeStrategy(BaseStrategy):
         )
         action_dfs = []
         for baseline in [True, False]:
+            suffix = "_baseline" if baseline else ""
             action = self.action(
                 baseline=baseline,
                 pred_start_time=pred_start_time,
@@ -220,29 +238,28 @@ class BaseTradeStrategy(BaseStrategy):
 
             order_df = pd.DataFrame(order_list)[["stock_id", "direction"]]
             order_df.columns = ["instrument", "direction"]
+            order_df["direction"][order_df["direction"] == 0] = -1
 
+            action_df = pd.merge(action_df, order_df, on="instrument", how="left")
+
+            # assign weight
             if hasattr(action, "target_weight_position"):
                 weight_df = pd.DataFrame(
                     action.target_weight_position, index=["weight"]
                 ).T
                 weight_df.index.rename("instrument", inplace=True)
+                weight_df.reset_index(inplace=True)
+                action_df = pd.merge(action_df, weight_df, on="instrument", how="left")
             else:
-                weight_df = pd.DataFrame(
-                    1 / len(order_df), columns=["weight"], index=order_df.instrument
-                )
-            weight_df.reset_index(inplace=True)
+                action_df["weight"] = np.nan
 
-            action_df = pd.merge(action_df, order_df, on="instrument", how="left")
-            action_df = pd.merge(action_df, weight_df, on="instrument", how="left")
-            if baseline:
-                action_df.columns = [
-                    "instrument",
-                    "signal_baseline",
-                    "direction_baseline",
-                    "weight_baseline",
-                ]
-            else:
-                action_df.columns = ["instrument", "signal", "direction", "weight"]
+            # rename cols
+            action_df.columns = [
+                "instrument",
+                f"signal{suffix}",
+                f"direction{suffix}",
+                f"weight{suffix}",
+            ]
             action_dfs.append(action_df)
 
         # reformat trade decision into dataframe
@@ -256,7 +273,20 @@ class BaseTradeStrategy(BaseStrategy):
             how="left",
         )
 
-        decision_df = decision_df.sort_values(["position", "signal"], ascending=False)
+        # re-assign weight
+        for baseline in [True, False]:
+            suffix = "_baseline" if baseline else ""
+            if np.isnan(decision_df[f"weight{suffix}"]).all():
+                ind = np.logical_or(
+                    np.logical_and(
+                        decision_df["position"] == 1,
+                        decision_df[f"direction{suffix}"] != -1,
+                    ),
+                    decision_df[f"direction{suffix}"] == 1,
+                )
+                decision_df[f"weight{suffix}"][ind] = 1.0 / self.topk
+
+        decision_df.sort_values(["position", "signal"], ascending=False, inplace=True)
         decision_df.reset_index(drop=True, inplace=True)
         cols = [
             "instrument",
@@ -268,13 +298,13 @@ class BaseTradeStrategy(BaseStrategy):
             "signal_baseline",
         ] + self.position_feature_cols
         decision_df = decision_df[cols]
-        decision_df["pred_start_time"] = pred_start_time
         return decision_df
 
     def get_position_df(self, rename_cols=False) -> Optional[pd.DataFrame]:
         """[amount, price, weight, count_day, position]"""
         current_position = copy.deepcopy(self.trade_position)
-        current_position.update_weight_all()
+        if "weight" in self.position_feature_cols:
+            current_position.update_weight_all()
         position = current_position.position
         for k in ["cash", "now_account_value"]:
             if k in position:

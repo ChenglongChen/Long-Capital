@@ -40,7 +40,7 @@ class MetaActor(nn.Module):
         bsz, ch, d = logits.size(0), logits.size(1), logits.size(2)
         logits = logits.reshape(-1, d)
         logits = self._max * torch.tanh(self.last(logits))
-        logits = logits.view(bsz, ch)
+        logits = logits.reshape(bsz, ch)
         return logits, hidden
 
 
@@ -113,7 +113,7 @@ class MetaActorProb(nn.Module):
         bsz, ch, d = logits.size(0), logits.size(1), logits.size(2)
         logits = logits.reshape(-1, d)
         mu = self.mu(logits)
-        mu = mu.view(bsz, ch)
+        mu = mu.reshape(bsz, ch)
         if not self._unbounded:
             mu = self._max * torch.tanh(mu)
         if self._c_sigma:
@@ -122,7 +122,7 @@ class MetaActorProb(nn.Module):
                 min=np.log(self._sigma_min),
                 max=np.log(self._sigma_max),
             ).exp()
-            sigma = sigma.view(bsz, ch)
+            sigma = sigma.reshape(bsz, ch)
         else:
             shape = [1] * len(mu.shape)
             shape[1] = -1

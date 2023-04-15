@@ -45,7 +45,7 @@ class MetaActor(nn.Module):
         bsz, ch, d = logits.size(0), logits.size(1), logits.size(2)
         logits = logits.reshape(-1, d)
         logits = self.last(logits)
-        logits = logits.view(bsz, ch)
+        logits = logits.reshape(bsz, ch)
         if self.softmax_output:
             mask = obs.eq(MASK_VALUE).all(2).float()
             logits = (1 - mask) * logits + mask * NEG_INF
