@@ -20,7 +20,7 @@ class MetaPPO(PPOPolicy):
         obs_space: gym.Space,
         action_space: gym.Space,
         hidden_sizes: List[int] = [32, 16, 8],
-        lr: float = 1e-4,
+        lr: float = 3e-4,
         discount_factor: float = 1.0,
         max_grad_norm: float = 100.0,
         reward_normalization: bool = True,
@@ -65,6 +65,11 @@ class MetaPPO(PPOPolicy):
         )
         critic = MetaCritic(net, device=auto_device(net)).to(auto_device(net))
         actor_critic = ActorCritic(actor, critic)
+        # orthogonal initialization
+        for m in actor_critic.modules():
+            if isinstance(m, torch.nn.Linear):
+                torch.nn.init.orthogonal_(m.weight)
+                torch.nn.init.zeros_(m.bias)
         optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
         # replace DiagGuassian with Independent(Normal) which is equivalent

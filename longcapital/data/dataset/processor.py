@@ -162,6 +162,18 @@ class DropInstrument(Processor):
         return df
 
 
+class Feature2MetaProcessor(Processor):
+    def __init__(self, fields):
+        self.fields = fields
+
+    def __call__(self, df):
+        df[[("meta", c) for c in self.fields]] = df[
+            [("feature", c) for c in self.fields]
+        ]
+        df.drop([("feature", c) for c in self.fields], axis=1, inplace=True)
+        return df
+
+
 class AlphaProcessor(Processor):
     def __init__(self):
         pass

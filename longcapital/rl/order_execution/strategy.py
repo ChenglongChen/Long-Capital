@@ -53,6 +53,7 @@ class BaseTradeStrategy(BaseStrategy):
     imitation_label_key: str = "label"
     initial_state: TradeStrategyInitialState
     stock_pool: List[str]
+    price_dict: dict
 
     def action(
         self,
@@ -140,6 +141,24 @@ class BaseTradeStrategy(BaseStrategy):
         else:
             feature = pd.merge(feature, position_df, on="instrument", how="left")
             feature.fillna(0, inplace=True)
+
+        # return metrics
+        feature[("feature", "return")] = 0
+        held = feature[("feature", "position")] == 1
+        held_stocks = feature[held].index.tolist()
+        count_days = feature[held][("feature", "count_day")]
+        for stock, count_day in zip(held_stocks, count_days):
+            curr_price = feature.loc[stock][("meta", "price")]
+            trade_step, _ = self.trade_calendar.get_range_idx(
+                pred_start_time, pred_end_time
+            )
+            prev_start_time, prev_end_time = self.trade_calendar.get_step_time(
+                trade_step, shift=int(count_day)
+            )
+            prev_price = self.signal.get_signal(prev_start_time, prev_end_time).loc[
+                stock
+            ][("meta", "price")]
+            feature[("feature", "return")].loc[stock] = curr_price / prev_price - 1.0
 
         # selected flag
         feature[("feature", "selected")] = 0
@@ -418,6 +437,7 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
 
         self.state_interpreter = self.state_interpreter_cls(
             dim=dim * feature_n_step,
+            stock_num=stock_num,
             **state_interpreter_kwargs,
         )
         self.action_interpreter = self.action_interpreter_cls(
@@ -606,6 +626,7 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
 
         self.state_interpreter = self.state_interpreter_cls(
             dim=dim * feature_n_step,
+            stock_num=stock_num,
             **state_interpreter_kwargs,
         )
         self.action_interpreter = self.action_interpreter_cls(

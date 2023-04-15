@@ -20,7 +20,7 @@ class MetaTD3(TD3Policy):
         n_step: int = 3,
         gamma: float = 1.0,
         tau: float = 0.05,
-        actor_lr: float = 1e-4,
+        actor_lr: float = 3e-4,
         critic_lr: float = 1e-3,
         exploration_noise: float = 0.1,
         max_action: float = 1.0,

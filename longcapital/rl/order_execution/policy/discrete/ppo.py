@@ -10,7 +10,7 @@ from longcapital.rl.utils.net.discrete import MetaActor, MetaCritic
 from qlib.rl.order_execution.policy import Trainer, auto_device, set_weight
 from tianshou.data import Batch
 from tianshou.policy import PPOPolicy
-from tianshou.utils.net.common import ActorCritic
+from tianshou.utils.net.common import ActorCritic, Net
 from tianshou.utils.net.discrete import Actor, Critic
 from torch.distributions import (
     Bernoulli,
@@ -27,7 +27,7 @@ class PPO(PPOPolicy):
         obs_space: gym.Space,
         action_space: gym.Space,
         hidden_sizes: List[int] = [32, 16, 8],
-        lr: float = 1e-4,
+        lr: float = 3e-4,
         discount_factor: float = 1.0,
         max_grad_norm: float = 100.0,
         reward_normalization: bool = True,
@@ -46,17 +46,17 @@ class PPO(PPOPolicy):
         weight_file: Optional[Path] = None,
         **kwargs,
     ) -> None:
-        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, attn_pooling=True)
+        net = Net(obs_space.shape, hidden_sizes=hidden_sizes)
         actor = Actor(net, action_space.n, device=auto_device(net)).to(auto_device(net))
 
-        net = MetaNet(
-            obs_space.shape,
-            action_space.shape,
-            hidden_sizes=hidden_sizes,
-            attn_pooling=True,
-        )
+        net = Net(obs_space.shape, action_space.shape, hidden_sizes=hidden_sizes)
         critic = Critic(net, device=auto_device(net)).to(auto_device(net))
         actor_critic = ActorCritic(actor, critic)
+        # orthogonal initialization
+        for m in actor_critic.modules():
+            if isinstance(m, torch.nn.Linear):
+                torch.nn.init.orthogonal_(m.weight)
+                torch.nn.init.zeros_(m.bias)
         optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
         super().__init__(
@@ -85,6 +85,26 @@ class PPO(PPOPolicy):
         if weight_file is not None:
             set_weight(self, Trainer.get_policy_state_dict(weight_file))
 
+    def forward(
+        self,
+        batch: Batch,
+        state: Optional[Union[dict, Batch, np.ndarray]] = None,
+        **kwargs: Any,
+    ) -> Batch:
+        logits, hidden = self.actor(batch.obs, state=state, info=batch.info)
+        if isinstance(logits, tuple):
+            dist = self.dist_fn(*logits)
+        else:
+            dist = self.dist_fn(logits)
+        if self._deterministic_eval and not self.training:
+            if self.action_type == "discrete":
+                act = logits.argmax(-1)
+            elif self.action_type == "continuous":
+                act = logits[0]
+        else:
+            act = dist.sample()
+        return Batch(logits=logits, act=act, state=hidden, dist=dist)
+
     def __str__(self):
         return "PPO"
 
@@ -96,7 +116,7 @@ class StepByStepMetaPPO(PPOPolicy):
         action_space: gym.Space,
         softmax_output: bool = True,
         hidden_sizes: List[int] = [32, 16, 8],
-        lr: float = 1e-4,
+        lr: float = 3e-4,
         discount_factor: float = 1.0,
         max_grad_norm: float = 100.0,
         reward_normalization: bool = True,
@@ -132,6 +152,11 @@ class StepByStepMetaPPO(PPOPolicy):
         )
         critic = MetaCritic(net, device=auto_device(net)).to(auto_device(net))
         actor_critic = ActorCritic(actor, critic)
+        # orthogonal initialization
+        for m in actor_critic.modules():
+            if isinstance(m, torch.nn.Linear):
+                torch.nn.init.orthogonal_(m.weight)
+                torch.nn.init.zeros_(m.bias)
         optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
         super().__init__(
@@ -191,7 +216,7 @@ class TopkMetaPPO(PPOPolicy):
         action_space: gym.Space,
         softmax_output: bool = True,
         hidden_sizes: List[int] = [32, 16, 8],
-        lr: float = 1e-4,
+        lr: float = 3e-4,
         discount_factor: float = 1.0,
         max_grad_norm: float = 100.0,
         reward_normalization: bool = True,
@@ -228,6 +253,11 @@ class TopkMetaPPO(PPOPolicy):
         )
         critic = MetaCritic(net, device=auto_device(net)).to(auto_device(net))
         actor_critic = ActorCritic(actor, critic)
+        # orthogonal initialization
+        for m in actor_critic.modules():
+            if isinstance(m, torch.nn.Linear):
+                torch.nn.init.orthogonal_(m.weight)
+                torch.nn.init.zeros_(m.bias)
         optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
         def dist(logits) -> Distribution:
@@ -299,7 +329,7 @@ class WeightMetaPPO(PPOPolicy):
         action_space: gym.Space,
         softmax_output: bool = True,
         hidden_sizes: List[int] = [32, 16, 8],
-        lr: float = 1e-4,
+        lr: float = 3e-4,
         discount_factor: float = 1.0,
         max_grad_norm: float = 100.0,
         reward_normalization: bool = True,
@@ -336,6 +366,11 @@ class WeightMetaPPO(PPOPolicy):
         )
         critic = MetaCritic(net, device=auto_device(net)).to(auto_device(net))
         actor_critic = ActorCritic(actor, critic)
+        # orthogonal initialization
+        for m in actor_critic.modules():
+            if isinstance(m, torch.nn.Linear):
+                torch.nn.init.orthogonal_(m.weight)
+                torch.nn.init.zeros_(m.bias)
         optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
         def dist(logits) -> Distribution:
@@ -395,7 +430,7 @@ class MultiBinaryMetaPPO(PPOPolicy):
         action_space: gym.Space,
         softmax_output: bool = True,
         hidden_sizes: List[int] = [32, 16, 8],
-        lr: float = 1e-4,
+        lr: float = 3e-4,
         discount_factor: float = 1.0,
         max_grad_norm: float = 100.0,
         reward_normalization: bool = True,
@@ -432,6 +467,11 @@ class MultiBinaryMetaPPO(PPOPolicy):
         )
         critic = MetaCritic(net, device=auto_device(net)).to(auto_device(net))
         actor_critic = ActorCritic(actor, critic)
+        # orthogonal initialization
+        for m in actor_critic.modules():
+            if isinstance(m, torch.nn.Linear):
+                torch.nn.init.orthogonal_(m.weight)
+                torch.nn.init.zeros_(m.bias)
         optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
 
         # replace DiagGuassian with Independent(Normal) which is equivalent

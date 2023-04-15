@@ -34,7 +34,7 @@ class DynamicBox(spaces.Box):
 
 
 class TradeStrategyStateInterpreter(StateInterpreter[TradeStrategyState, np.ndarray]):
-    def __init__(self, dim, stock_num=300, **kwargs):
+    def __init__(self, dim, stock_num, **kwargs):
         self.dim = dim
         self.stock_num = stock_num
         self.shape = (self.stock_num, self.dim)
