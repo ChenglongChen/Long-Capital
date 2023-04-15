@@ -116,7 +116,7 @@ class StepByStepMetaPPO(PPOPolicy):
         **kwargs,
     ) -> None:
 
-        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=False)
+        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
         actor = MetaActor(
             net,
             [action_space.n],
@@ -212,7 +212,7 @@ class TopkMetaPPO(PPOPolicy):
     ) -> None:
         self.topk = kwargs.get("topk", 1)
 
-        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=False)
+        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
         actor = MetaActor(
             net,
             action_space.shape,
@@ -320,7 +320,7 @@ class WeightMetaPPO(PPOPolicy):
     ) -> None:
         total_count = kwargs.get("topk", 10)
 
-        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=False)
+        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
         actor = MetaActor(
             net,
             action_space.shape,
@@ -415,7 +415,7 @@ class MultiBinaryMetaPPO(PPOPolicy):
         **kwargs,
     ) -> None:
 
-        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=False)
+        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
         actor = MetaActor(
             net,
             action_space.shape,

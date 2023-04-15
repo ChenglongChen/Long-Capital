@@ -83,17 +83,20 @@ class TopkDropoutDiscreteDynamicParamStrategyActionInterpreter(
 ):
     @property
     def action_space(self) -> spaces.Discrete:
-        return spaces.Discrete(self.topk + 1)
+        return spaces.Discrete((self.topk + 1) * (self.topk))
 
     def interpret(
         self, state: TradeStrategyState, action: int
     ) -> TopkDropoutStrategyAction:
-        assert 0 <= action <= self.topk
-        n_drop = self.n_drop if self.baseline else int(action)
+        assert 0 <= action < (self.topk + 1) * (self.topk)
+        n_drop = self.n_drop if self.baseline else int(action % (self.topk + 1))
+        hold_thresh = (
+            self.hold_thresh if self.baseline else int(action / (self.topk + 1)) + 1
+        )
         topk = state.initial_state.topk
         signal = state.signal
         return TopkDropoutStrategyAction(
-            signal=signal, topk=topk, n_drop=n_drop, hold_thresh=self.hold_thresh
+            signal=signal, topk=topk, n_drop=n_drop, hold_thresh=hold_thresh
         )
 
 

@@ -34,7 +34,7 @@ class MetaSAC(SACPolicy):
         weight_file: Optional[Path] = None,
         **kwargs,
     ) -> None:
-        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=False)
+        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
         actor = MetaActorProb(
             net,
             action_space.shape,

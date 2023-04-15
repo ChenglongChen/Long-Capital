@@ -29,7 +29,7 @@ class MetaDDPG(DDPGPolicy):
         weight_file: Optional[Path] = None,
         **kwargs,
     ) -> None:
-        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=False)
+        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
         actor = MetaActor(
             net, action_space.shape, max_action=max_action, device=auto_device(net)
         ).to(auto_device(net))

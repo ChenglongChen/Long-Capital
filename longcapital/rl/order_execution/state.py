@@ -10,8 +10,7 @@ class TradeStrategyInitialState(NamedTuple):
     end_time: str
     topk: int
     stock_num: int = 20
-    stock_sampling_method: str = "daily"
-    stock_sorting: bool = True
+    stock_sampling_method: str = "topk"
     sample_date: bool = False
     skip_nontradable_start_time: bool = False
 

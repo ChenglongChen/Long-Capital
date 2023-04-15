@@ -45,7 +45,7 @@ class MetaPPO(PPOPolicy):
         **kwargs,
     ) -> None:
 
-        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=False)
+        net = MetaNet(obs_space.shape, hidden_sizes=hidden_sizes, self_attn=True)
         actor = MetaActorProb(
             net,
             action_space.shape,

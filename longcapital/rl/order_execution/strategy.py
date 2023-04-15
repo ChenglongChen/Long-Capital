@@ -152,12 +152,11 @@ class BaseTradeStrategy(BaseStrategy):
             feature[("feature", "selected")].iloc[selected_stock_indices] = 1
 
         # sort to make sure the ranking distribution is similar across different dates
-        if self.initial_state.stock_sorting:
-            feature.sort_values(
-                by=[("feature", "position"), ("feature", self.signal_key)],
-                ascending=False,
-                inplace=True,
-            )
+        feature.sort_values(
+            by=[("feature", "position"), ("feature", self.signal_key)],
+            ascending=False,
+            inplace=True,
+        )
 
         # sample stocks
         stock_pool = self.sample_stocks(stocks=feature.index.tolist())
@@ -339,7 +338,6 @@ class BaseTradeStrategy(BaseStrategy):
             topk=self.topk,
             stock_num=self.stock_num,
             stock_sampling_method=self.stock_sampling_method,
-            stock_sorting=self.stock_sorting,
         )
 
     def reset_initial_state(self, initial_state: TradeStrategyInitialState):
@@ -347,14 +345,8 @@ class BaseTradeStrategy(BaseStrategy):
         self.stock_pool = []
 
     def sample_stocks(self, stocks: List[str]):
-        if self.initial_state.stock_sorting:
-            # select top stocks every day
-            return stocks[: self.initial_state.stock_num]
-        elif self.initial_state.stock_sampling_method == "daily":
-            # select random stocks every day
-            return np.random.choice(stocks, self.initial_state.stock_num)
-        elif self.initial_state.stock_sampling_method == "interval":
-            # select random stocks once, and fix for the whole interval
+        if self.initial_state.stock_sampling_method == "random":
+            # select random stocks
             if len(self.stock_pool) == 0:
                 instruments = D.list_instruments(
                     instruments=D.instruments("csi300"),
@@ -365,7 +357,12 @@ class BaseTradeStrategy(BaseStrategy):
                 self.stock_pool = np.random.choice(
                     instruments, self.initial_state.stock_num
                 )
-            return self.stock_pool
+            stock_pool = self.stock_pool
+        else:
+            # select topk stocks
+            stock_pool = stocks[: self.initial_state.stock_num]
+        # keep the original order
+        return [s for s in stocks if s in stock_pool]
 
     def reset_policy(self, policy: BasePolicy):
         self.policy = policy
@@ -385,8 +382,7 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         only_tradable,
         n_drop,
         hold_thresh,
-        stock_sampling_method="daily",
-        stock_sorting=True,
+        stock_sampling_method="topk",
         equal_weight=False,
         start_time=None,
         end_time=None,
@@ -417,7 +413,6 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         self.stock_num = stock_num
         self.signal_key = signal_key
         self.stock_sampling_method = stock_sampling_method
-        self.stock_sorting = stock_sorting
         self.equal_weight = equal_weight
         self.pred_score = None
 
@@ -580,8 +575,7 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
         only_tradable,
         n_drop=None,  # placeholder
         hold_thresh=None,  # placeholder
-        stock_sampling_method="daily",
-        stock_sorting=True,
+        stock_sampling_method="topk",
         equal_weight=False,
         start_time=None,
         end_time=None,
@@ -606,7 +600,6 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
         self.topk = topk
         self.stock_num = stock_num
         self.stock_sampling_method = stock_sampling_method
-        self.stock_sorting = stock_sorting
         self.only_tradable = only_tradable
         self.n_drop = n_drop
         self.hold_thresh = hold_thresh
