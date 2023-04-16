@@ -4,7 +4,10 @@ from typing import Any, List, Optional, Union
 import gym
 import numpy as np
 import torch
-from longcapital.rl.utils.distributions import MultivariateHypergeometric
+from longcapital.rl.utils.distributions import (
+    MultivariateCategorical,
+    MultivariateHypergeometric,
+)
 from longcapital.rl.utils.net.common import MetaNet
 from longcapital.rl.utils.net.discrete import MetaActor, MetaCritic
 from qlib.rl.order_execution.policy import Trainer, auto_device, set_weight
@@ -107,6 +110,99 @@ class PPO(PPOPolicy):
 
     def __str__(self):
         return "PPO"
+
+
+class MultiPPO(PPOPolicy):
+    def __init__(
+        self,
+        obs_space: gym.Space,
+        action_space: gym.Space,
+        hidden_sizes: List[int] = [32, 16, 8],
+        lr: float = 3e-4,
+        discount_factor: float = 1.0,
+        max_grad_norm: float = 100.0,
+        reward_normalization: bool = True,
+        advantage_normalization: bool = True,
+        recompute_advantage: bool = False,
+        dual_clip: float = None,
+        eps_clip: float = 0.3,
+        value_clip: bool = True,
+        vf_coef: float = 0.5,
+        ent_coef: float = 0.01,
+        gae_lambda: float = 1.0,
+        action_scaling: bool = False,
+        action_bound_method: str = "",
+        max_batch_size: int = 256,
+        deterministic_eval: bool = True,
+        weight_file: Optional[Path] = None,
+        **kwargs,
+    ) -> None:
+        net = Net(obs_space.shape, hidden_sizes=hidden_sizes)
+        actor = Actor(
+            net, action_space.nvec.sum(), softmax_output=False, device=auto_device(net)
+        ).to(auto_device(net))
+
+        net = Net(obs_space.shape, action_space.shape, hidden_sizes=hidden_sizes)
+        critic = Critic(net, device=auto_device(net)).to(auto_device(net))
+        actor_critic = ActorCritic(actor, critic)
+        # orthogonal initialization
+        for m in actor_critic.modules():
+            if isinstance(m, torch.nn.Linear):
+                torch.nn.init.orthogonal_(m.weight)
+                torch.nn.init.zeros_(m.bias)
+        optim = torch.optim.Adam(actor_critic.parameters(), lr=lr)
+
+        def dist(logits) -> Distribution:
+            return MultivariateCategorical(nvec=action_space.nvec, logits=logits)
+
+        super().__init__(
+            actor,
+            critic,
+            optim,
+            dist,
+            discount_factor=discount_factor,
+            max_grad_norm=max_grad_norm,
+            reward_normalization=reward_normalization,
+            advantage_normalization=advantage_normalization,
+            recompute_advantage=recompute_advantage,
+            dual_clip=dual_clip,
+            eps_clip=eps_clip,
+            value_clip=value_clip,
+            vf_coef=vf_coef,
+            ent_coef=ent_coef,
+            gae_lambda=gae_lambda,
+            max_batchsize=max_batch_size,
+            deterministic_eval=deterministic_eval,
+            observation_space=obs_space,
+            action_space=action_space,
+            action_scaling=action_scaling,
+            action_bound_method=action_bound_method,
+        )
+        if weight_file is not None:
+            set_weight(self, Trainer.get_policy_state_dict(weight_file))
+
+    def forward(
+        self,
+        batch: Batch,
+        state: Optional[Union[dict, Batch, np.ndarray]] = None,
+        **kwargs: Any,
+    ) -> Batch:
+        logits, hidden = self.actor(batch.obs, state=state, info=batch.info)
+        if isinstance(logits, tuple):
+            dist = self.dist_fn(*logits)
+        else:
+            dist = self.dist_fn(logits)
+        if self._deterministic_eval and not self.training:
+            if self.action_type == "discrete":
+                act = dist.argmax()
+            elif self.action_type == "continuous":
+                act = logits[0]
+        else:
+            act = dist.sample()
+        return Batch(logits=logits, act=act, state=hidden, dist=dist)
+
+    def __str__(self):
+        return "MultiPPO"
 
 
 class StepByStepMetaPPO(PPOPolicy):

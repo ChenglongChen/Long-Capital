@@ -42,9 +42,12 @@ class ExecutionInformationRatioAndExcessReturnReward(Reward[TradeStrategyState])
             ir = float(analysis.loc["information_ratio"])
 
             last_metrics = portfolio_metrics.iloc[-1]
-            rr = self.rr_func(
-                last_metrics["return"] - last_metrics["cost"]
-            ) - self.excess_weight * self.rr_func(last_metrics["bench"])
+            rr = (
+                last_metrics["return"]
+                - last_metrics["cost"]
+                - self.excess_weight * last_metrics["bench"]
+            )
+            rr = self.rr_func(rr)
             reward = self.ir_weight * ir + self.rr_weight * rr
         return reward * self.scale
 
@@ -125,9 +128,12 @@ class ExecutionExcessMeanVarianceReward(Reward[TradeStrategyState]):
 
         if state.info["ready"] and len(portfolio_metrics):
             last_metrics = portfolio_metrics.iloc[-1]
-            rr = self.rr_func(
-                last_metrics["return"] - last_metrics["cost"]
-            ) - self.excess_weight * self.rr_func(last_metrics["bench"])
+            rr = (
+                last_metrics["return"]
+                - last_metrics["cost"]
+                - self.excess_weight * last_metrics["bench"]
+            )
+            rr = self.rr_func(rr)
             reward = rr - 0.5 * self.k * (rr**2)
         return reward * self.scale
 

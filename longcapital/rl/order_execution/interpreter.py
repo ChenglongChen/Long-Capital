@@ -78,7 +78,26 @@ class TopkDropoutStrategyActionInterpreter(
         self.baseline = baseline
 
 
-class TopkDropoutDiscreteDynamicParamStrategyActionInterpreter(
+class TopkDropoutDiscreteDynamicDropoutStrategyActionInterpreter(
+    TopkDropoutStrategyActionInterpreter
+):
+    @property
+    def action_space(self) -> spaces.Discrete:
+        return spaces.Discrete(self.topk + 1)
+
+    def interpret(
+        self, state: TradeStrategyState, action: int
+    ) -> TopkDropoutStrategyAction:
+        n_drop = self.n_drop if self.baseline else int(action)
+        hold_thresh = self.hold_thresh if self.baseline else 1
+        topk = state.initial_state.topk
+        signal = state.signal
+        return TopkDropoutStrategyAction(
+            signal=signal, topk=topk, n_drop=n_drop, hold_thresh=hold_thresh
+        )
+
+
+class TopkDropoutDiscreteDynamicDropoutHoldThreshStrategyActionInterpreter(
     TopkDropoutStrategyActionInterpreter
 ):
     @property
@@ -88,11 +107,31 @@ class TopkDropoutDiscreteDynamicParamStrategyActionInterpreter(
     def interpret(
         self, state: TradeStrategyState, action: int
     ) -> TopkDropoutStrategyAction:
-        assert 0 <= action < (self.topk + 1) * (self.topk)
         n_drop = self.n_drop if self.baseline else int(action % (self.topk + 1))
         hold_thresh = (
             self.hold_thresh if self.baseline else int(action / (self.topk + 1)) + 1
         )
+        topk = state.initial_state.topk
+        signal = state.signal
+        return TopkDropoutStrategyAction(
+            signal=signal, topk=topk, n_drop=n_drop, hold_thresh=hold_thresh
+        )
+
+
+class TopkDropoutDiscreteDynamicMultiDropoutHoldThreshStrategyActionInterpreter(
+    TopkDropoutStrategyActionInterpreter
+):
+    @property
+    def action_space(self) -> spaces.MultiDiscrete:
+        return spaces.MultiDiscrete([self.topk + 1, self.topk])
+
+    def interpret(
+        self, state: TradeStrategyState, action: torch.Tensor
+    ) -> TopkDropoutStrategyAction:
+        if isinstance(action, torch.Tensor):
+            action = action.squeeze().detach().numpy()
+        n_drop = self.n_drop if self.baseline else int(action[0])
+        hold_thresh = self.hold_thresh if self.baseline else int(action[1])
         topk = state.initial_state.topk
         signal = state.signal
         return TopkDropoutStrategyAction(

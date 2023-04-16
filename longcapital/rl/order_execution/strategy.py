@@ -11,7 +11,9 @@ from longcapital.rl.order_execution.interpreter import (
     StepByStepStrategyActionInterpreter,
     TopkDropoutContinuousRerankDynamicParamStrategyActionInterpreter,
     TopkDropoutContinuousRerankStrategyActionInterpreter,
-    TopkDropoutDiscreteDynamicParamStrategyActionInterpreter,
+    TopkDropoutDiscreteDynamicDropoutHoldThreshStrategyActionInterpreter,
+    TopkDropoutDiscreteDynamicDropoutStrategyActionInterpreter,
+    TopkDropoutDiscreteDynamicMultiDropoutHoldThreshStrategyActionInterpreter,
     TopkDropoutDiscreteDynamicSelectionStrategyActionInterpreter,
     TopkDropoutDiscreteRerankDynamicParamStrategyActionInterpreter,
     TopkDropoutStepByStepDiscreteRerankDynamicParamStrategyActionInterpreter,
@@ -501,12 +503,32 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         )
 
 
-class TopkDropoutDiscreteDynamicParamStrategy(TopkDropoutStrategy):
+class TopkDropoutDiscreteDynamicDropoutStrategy(TopkDropoutStrategy):
     policy_cls = discrete.PPO
-    action_interpreter_cls = TopkDropoutDiscreteDynamicParamStrategyActionInterpreter
+    action_interpreter_cls = TopkDropoutDiscreteDynamicDropoutStrategyActionInterpreter
 
     def __str__(self):
-        return "TopkDropoutDiscreteDynamicParamStrategy"
+        return "TopkDropoutDiscreteDynamicDropoutStrategy"
+
+
+class TopkDropoutDiscreteDynamicDropoutHoldThreshStrategy(TopkDropoutStrategy):
+    policy_cls = discrete.PPO
+    action_interpreter_cls = (
+        TopkDropoutDiscreteDynamicDropoutHoldThreshStrategyActionInterpreter
+    )
+
+    def __str__(self):
+        return "TopkDropoutDiscreteDynamicDropoutHoldThreshStrategy"
+
+
+class TopkDropoutDiscreteDynamicMultiDropoutHoldThreshStrategy(TopkDropoutStrategy):
+    policy_cls = discrete.MultiPPO
+    action_interpreter_cls = (
+        TopkDropoutDiscreteDynamicMultiDropoutHoldThreshStrategyActionInterpreter
+    )
+
+    def __str__(self):
+        return "TopkDropoutDiscreteDynamicMultiDropoutHoldThreshStrategy"
 
 
 class TopkDropoutContinuousRerankStrategy(TopkDropoutStrategy):
