@@ -11,10 +11,10 @@ from longcapital.rl.order_execution.interpreter import (
     StepByStepStrategyActionInterpreter,
     TopkDropoutContinuousRerankDynamicParamStrategyActionInterpreter,
     TopkDropoutContinuousRerankStrategyActionInterpreter,
-    TopkDropoutDiscreteDynamicDropoutHoldThreshStrategyActionInterpreter,
     TopkDropoutDiscreteDynamicDropoutStrategyActionInterpreter,
-    TopkDropoutDiscreteDynamicMultiDropoutHoldThreshStrategyActionInterpreter,
+    TopkDropoutDiscreteDynamicParamStrategyActionInterpreter,
     TopkDropoutDiscreteDynamicSelectionStrategyActionInterpreter,
+    TopkDropoutDiscreteMultiDynamicParamStrategyActionInterpreter,
     TopkDropoutDiscreteRerankDynamicParamStrategyActionInterpreter,
     TopkDropoutStepByStepDiscreteRerankDynamicParamStrategyActionInterpreter,
     TopkDropoutStrategyAction,
@@ -245,13 +245,14 @@ class BaseTradeStrategy(BaseStrategy):
                 pred_start_time=pred_start_time,
                 pred_end_time=pred_end_time,
             )
-            order_list = self.generate_trade_decision(
+            sell_order_list, buy_order_list = self.generate_trade_decision(
                 execute_result=None,
                 action=action,
                 trade_start_time=trade_start_time,
                 trade_end_time=trade_end_time,
                 return_decision=False,
             )
+            order_list = sell_order_list + buy_order_list
 
             action_df = action.signal.to_frame().reset_index()
             action_df.columns = ["instrument", "signal"]
@@ -431,6 +432,7 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         self.start_time = start_time
         self.end_time = end_time
         self.dim = dim
+        self.topk_original = topk
         self.stock_num = stock_num
         self.signal_key = signal_key
         self.stock_sampling_method = stock_sampling_method
@@ -511,24 +513,59 @@ class TopkDropoutDiscreteDynamicDropoutStrategy(TopkDropoutStrategy):
         return "TopkDropoutDiscreteDynamicDropoutStrategy"
 
 
-class TopkDropoutDiscreteDynamicDropoutHoldThreshStrategy(TopkDropoutStrategy):
+class TopkDropoutDiscreteDynamicParamStrategy(TopkDropoutStrategy):
     policy_cls = discrete.PPO
-    action_interpreter_cls = (
-        TopkDropoutDiscreteDynamicDropoutHoldThreshStrategyActionInterpreter
-    )
+    action_interpreter_cls = TopkDropoutDiscreteDynamicParamStrategyActionInterpreter
 
     def __str__(self):
-        return "TopkDropoutDiscreteDynamicDropoutHoldThreshStrategy"
+        return "TopkDropoutDiscreteDynamicParamStrategy"
+
+    def generate_trade_decision(
+        self,
+        execute_result=None,
+        action: TopkDropoutStrategyAction = None,
+        trade_start_time: Optional[pd.Timestamp] = None,
+        trade_end_time: Optional[pd.Timestamp] = None,
+        return_decision: bool = True,
+    ):
+        if action is None:
+            action = self.action()
+        topk = action.topk
+        action = TopkDropoutStrategyAction(
+            signal=action.signal,
+            topk=self.topk_original,
+            n_drop=action.n_drop,
+            hold_thresh=action.hold_thresh,
+            ready=action.ready,
+        )
+        self.prepare_trading_with_action(action)
+        sell_order_list, buy_order_list = super(
+            TopkDropoutStrategy, self
+        ).generate_trade_decision(
+            execute_result,
+            trade_start_time=trade_start_time,
+            trade_end_time=trade_end_time,
+            return_decision=False,
+        )
+        last = self.trade_position.get_stock_list()
+        buy_num = max(len(sell_order_list) + topk - len(last), 0)
+        buy_order_list = buy_order_list[:buy_num]
+        if return_decision:
+            return TradeDecisionWO(sell_order_list + buy_order_list, self)
+        else:
+            return sell_order_list, buy_order_list
 
 
-class TopkDropoutDiscreteDynamicMultiDropoutHoldThreshStrategy(TopkDropoutStrategy):
+class TopkDropoutDiscreteMultiDynamicParamStrategy(
+    TopkDropoutDiscreteDynamicParamStrategy
+):
     policy_cls = discrete.MultiPPO
     action_interpreter_cls = (
-        TopkDropoutDiscreteDynamicMultiDropoutHoldThreshStrategyActionInterpreter
+        TopkDropoutDiscreteMultiDynamicParamStrategyActionInterpreter
     )
 
     def __str__(self):
-        return "TopkDropoutDiscreteDynamicMultiDropoutHoldThreshStrategy"
+        return "TopkDropoutDiscreteMultiDynamicParamStrategy"
 
 
 class TopkDropoutContinuousRerankStrategy(TopkDropoutStrategy):
