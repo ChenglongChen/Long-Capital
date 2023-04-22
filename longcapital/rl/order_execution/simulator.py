@@ -39,49 +39,60 @@ class TradeStrategySimulator(
 
         trade_exchange = get_exchange(**exchange_kwargs)
 
-        # config start_time and end_time for trading
-        if initial_state.sample_date and not is_eval:
-            start_time, end_time = random_daterange(
-                initial_state.start_time, initial_state.end_time
-            )
-        else:
-            start_time, end_time = initial_state.start_time, initial_state.end_time
+        success = False
+        while not success:
+            try:
+                # config start_time and end_time for trading
+                if initial_state.sample_date and not is_eval:
+                    start_time, end_time = random_daterange(
+                        initial_state.start_time, initial_state.end_time
+                    )
+                else:
+                    start_time, end_time = (
+                        initial_state.start_time,
+                        initial_state.end_time,
+                    )
 
-        trade_account = create_account_instance(
-            start_time=start_time,
-            end_time=end_time,
-            benchmark=benchmark,
-            account=account,
-            pos_type=pos_type,
-        )
+                trade_account = create_account_instance(
+                    start_time=start_time,
+                    end_time=end_time,
+                    benchmark=benchmark,
+                    account=account,
+                    pos_type=pos_type,
+                )
 
-        self.common_infra = CommonInfrastructure(
-            trade_account=trade_account, trade_exchange=trade_exchange
-        )
+                self.common_infra = CommonInfrastructure(
+                    trade_account=trade_account, trade_exchange=trade_exchange
+                )
 
-        executor = {
-            "class": "SimulatorExecutor",
-            "module_path": "qlib.backtest.executor",
-            "kwargs": {
-                "time_per_step": "day",
-                "generate_portfolio_metrics": True,
-                "verbose": self.verbose,
-                "indicator_config": {
-                    "show_indicator": self.verbose,
-                },
-                "common_infra": self.common_infra,
-            },
-        }
+                executor = {
+                    "class": "SimulatorExecutor",
+                    "module_path": "qlib.backtest.executor",
+                    "kwargs": {
+                        "time_per_step": "day",
+                        "generate_portfolio_metrics": True,
+                        "verbose": self.verbose,
+                        "indicator_config": {
+                            "show_indicator": self.verbose,
+                        },
+                        "common_infra": self.common_infra,
+                    },
+                }
 
-        self.trade_executor = init_instance_by_config(
-            executor, accept_types=BaseExecutor
-        )
+                self.trade_executor = init_instance_by_config(
+                    executor, accept_types=BaseExecutor
+                )
 
-        # reset simulator and trade_strategy
-        self.reset(initial_state, start_time, end_time)
-        self.trade_strategy.reset_common_infra(self.common_infra)
-        self.trade_strategy.reset_level_infra(self.trade_executor.get_level_infra())
-        self.trade_strategy.reset_initial_state(initial_state)
+                # reset simulator and trade_strategy
+                self.reset(initial_state, start_time, end_time)
+                self.trade_strategy.reset_common_infra(self.common_infra)
+                self.trade_strategy.reset_level_infra(
+                    self.trade_executor.get_level_infra()
+                )
+                self.trade_strategy.reset_initial_state(initial_state)
+                success = True
+            except:  # noqa
+                pass
 
     def reset(
         self, initial_state: TradeStrategyInitialState, start_time: str, end_time: str

@@ -256,11 +256,13 @@ class BaseTradeStrategy(BaseStrategy):
             action_df = action.signal.to_frame().reset_index()
             action_df.columns = ["instrument", "signal"]
 
-            order_df = pd.DataFrame(order_list)[["stock_id", "direction"]]
-            order_df.columns = ["instrument", "direction"]
-            order_df["direction"][order_df["direction"] == 0] = -1
-
-            action_df = pd.merge(action_df, order_df, on="instrument", how="left")
+            if len(order_list):
+                order_df = pd.DataFrame(order_list)[["stock_id", "direction"]]
+                order_df.columns = ["instrument", "direction"]
+                order_df["direction"][order_df["direction"] == 0] = -1
+                action_df = pd.merge(action_df, order_df, on="instrument", how="left")
+            else:
+                action_df["direction"] = np.nan
 
             # assign weight
             if hasattr(action, "target_weight_position"):
