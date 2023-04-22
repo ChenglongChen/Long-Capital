@@ -25,6 +25,7 @@ class TradeStrategySimulator(
         pos_type: str = "Position",
         exchange_kwargs: Any = {},
         verbose: bool = False,
+        is_eval: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init__(initial_state)
@@ -39,7 +40,7 @@ class TradeStrategySimulator(
         trade_exchange = get_exchange(**exchange_kwargs)
 
         # config start_time and end_time for trading
-        if initial_state.sample_date:
+        if initial_state.sample_date and not is_eval:
             start_time, end_time = random_daterange(
                 initial_state.start_time, initial_state.end_time
             )
