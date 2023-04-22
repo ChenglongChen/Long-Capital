@@ -11,7 +11,6 @@ from longcapital.rl.order_execution.interpreter import (
     StepByStepStrategyActionInterpreter,
     TopkDropoutContinuousRerankDynamicParamStrategyActionInterpreter,
     TopkDropoutContinuousRerankStrategyActionInterpreter,
-    TopkDropoutDiscreteDynamicDropoutStrategyActionInterpreter,
     TopkDropoutDiscreteDynamicParamStrategyActionInterpreter,
     TopkDropoutDiscreteDynamicSelectionStrategyActionInterpreter,
     TopkDropoutDiscreteMultiDynamicParamStrategyActionInterpreter,
@@ -52,7 +51,7 @@ class BaseTradeStrategy(BaseStrategy):
     signal: Any
     raw_signal: pd.DataFrame
     signal_key: str = "signal"
-    imitation_label_key: str = "label"
+    imitation_label_key: Tuple[str] = ("feature", "signal")
     initial_state: TradeStrategyInitialState
     stock_pool: List[str]
     price_dict: dict
@@ -405,12 +404,12 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         n_drop,
         hold_thresh,
         stock_sampling_method="topk",
-        equal_weight=False,
+        equal_weight=True,
         start_time=None,
         end_time=None,
         rerank_topk=True,
         signal_key="signal",
-        imitation_label_key="label",
+        imitation_label_key=("feature", "signal"),
         feature_n_step=1,
         position_feature_cols=["count_day"],
         checkpoint_path=None,
@@ -433,8 +432,10 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
         self.end_time = end_time
         self.dim = dim
         self.topk_original = topk
+        self.n_drop_original = n_drop
         self.stock_num = stock_num
         self.signal_key = signal_key
+        self.imitation_label_key = imitation_label_key
         self.stock_sampling_method = stock_sampling_method
         self.equal_weight = equal_weight
         self.pred_score = None
@@ -503,14 +504,6 @@ class TopkDropoutStrategy(TopkDropoutStrategyBase, BaseTradeStrategy):
             trade_end_time=trade_end_time,
             return_decision=return_decision,
         )
-
-
-class TopkDropoutDiscreteDynamicDropoutStrategy(TopkDropoutStrategy):
-    policy_cls = discrete.PPO
-    action_interpreter_cls = TopkDropoutDiscreteDynamicDropoutStrategyActionInterpreter
-
-    def __str__(self):
-        return "TopkDropoutDiscreteDynamicDropoutStrategy"
 
 
 class TopkDropoutDiscreteDynamicParamStrategy(TopkDropoutStrategy):
@@ -655,12 +648,12 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
         n_drop=None,  # placeholder
         hold_thresh=None,  # placeholder
         stock_sampling_method="topk",
-        equal_weight=False,
+        equal_weight=True,
         start_time=None,
         end_time=None,
         rerank_topk=True,
         signal_key="signal",
-        imitation_label_key="label",
+        imitation_label_key=("feature", "signal"),
         feature_n_step=1,
         position_feature_cols=["count_day"],
         checkpoint_path=None,
@@ -676,6 +669,7 @@ class WeightStrategy(WeightStrategyBase, BaseTradeStrategy):
         self.start_time = start_time
         self.end_time = end_time
         self.signal_key = signal_key
+        self.imitation_label_key = imitation_label_key
         self.topk = topk
         self.stock_num = stock_num
         self.stock_sampling_method = stock_sampling_method

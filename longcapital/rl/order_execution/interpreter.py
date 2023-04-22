@@ -76,25 +76,7 @@ class TopkDropoutStrategyActionInterpreter(
         self.signal_key = signal_key
         self.stock_num = stock_num
         self.baseline = baseline
-
-
-class TopkDropoutDiscreteDynamicDropoutStrategyActionInterpreter(
-    TopkDropoutStrategyActionInterpreter
-):
-    @property
-    def action_space(self) -> spaces.Discrete:
-        return spaces.Discrete(self.topk + 1)
-
-    def interpret(
-        self, state: TradeStrategyState, action: int
-    ) -> TopkDropoutStrategyAction:
-        n_drop = self.n_drop if self.baseline else int(action)
-        hold_thresh = self.hold_thresh if self.baseline else 1
-        topk = state.initial_state.topk
-        signal = state.signal
-        return TopkDropoutStrategyAction(
-            signal=signal, topk=topk, n_drop=n_drop, hold_thresh=hold_thresh
-        )
+        self.kwargs = kwargs
 
 
 class TopkDropoutDiscreteDynamicParamStrategyActionInterpreter(
@@ -102,19 +84,46 @@ class TopkDropoutDiscreteDynamicParamStrategyActionInterpreter(
 ):
     @property
     def action_space(self) -> spaces.Discrete:
-        return spaces.Discrete((self.topk + 1) * (self.topk + 1) * self.topk)
+        d = self.topk + 1
+        if self.kwargs.get("dynamic_topk") and self.kwargs.get("dynamic_hold_thresh"):
+            return spaces.Discrete(d * d * d)
+        elif self.kwargs.get("dynamic_topk") or self.kwargs.get("dynamic_hold_thresh"):
+            return spaces.Discrete(d * d)
+        else:
+            return spaces.Discrete(d)
 
     def interpret(
         self, state: TradeStrategyState, action: int
     ) -> TopkDropoutStrategyAction:
-        if self.baseline:
-            topk = self.topk
-            n_drop = self.n_drop
-            hold_thresh = self.hold_thresh
-        else:
-            index = np.unravel_index(action, [self.topk + 1, self.topk + 1, self.topk])
-            topk, n_drop, hold_thresh = int(index[0]), int(index[1]), int(index[2])
         signal = state.signal
+        if self.baseline:
+            topk, n_drop, hold_thresh = self.topk, self.n_drop, self.hold_thresh
+        else:
+            d = self.topk + 1
+            if self.kwargs.get("dynamic_topk"):
+                if self.kwargs.get("dynamic_hold_thresh"):
+                    action = np.unravel_index(action, [d, d, d])
+                    topk, n_drop, hold_thresh = (
+                        int(action[0]),
+                        int(action[1]),
+                        int(action[2]),
+                    )
+                else:
+                    action = np.unravel_index(action, [d, d])
+                    topk, n_drop, hold_thresh = int(action[0]), int(action[1]), 1
+                num_position = int(state.position.sum())
+                n_drop_extra = max(num_position - topk, 0)
+                n_drop += n_drop_extra
+            else:
+                if self.kwargs.get("dynamic_hold_thresh"):
+                    action = np.unravel_index(action, [d, d])
+                    topk, n_drop, hold_thresh = (
+                        self.topk,
+                        int(action[0]),
+                        int(action[1]),
+                    )
+                else:
+                    topk, n_drop, hold_thresh = self.topk, int(action), 1
         return TopkDropoutStrategyAction(
             signal=signal, topk=topk, n_drop=n_drop, hold_thresh=hold_thresh
         )
@@ -125,17 +134,47 @@ class TopkDropoutDiscreteMultiDynamicParamStrategyActionInterpreter(
 ):
     @property
     def action_space(self) -> spaces.MultiDiscrete:
-        return spaces.MultiDiscrete([self.topk + 1, self.topk + 1, self.topk])
+        d = self.topk + 1
+        if self.kwargs.get("dynamic_topk") and self.kwargs.get("dynamic_hold_thresh"):
+            return spaces.MultiDiscrete([d, d, d])
+        elif self.kwargs.get("dynamic_topk") or self.kwargs.get("dynamic_hold_thresh"):
+            return spaces.MultiDiscrete([d, d])
+        else:
+            return spaces.MultiDiscrete([d])
 
     def interpret(
         self, state: TradeStrategyState, action: torch.Tensor
     ) -> TopkDropoutStrategyAction:
-        if isinstance(action, torch.Tensor):
-            action = action.squeeze().detach().numpy()
-        topk = self.topk if self.baseline else int(action[0])
-        n_drop = self.n_drop if self.baseline else int(action[1])
-        hold_thresh = self.hold_thresh if self.baseline else int(action[2])
         signal = state.signal
+        if self.baseline:
+            topk, n_drop, hold_thresh = self.topk, self.n_drop, self.hold_thresh
+        else:
+            action = (
+                action.squeeze().detach().numpy()
+                if isinstance(action, torch.Tensor)
+                else action
+            )
+            if self.kwargs.get("dynamic_topk"):
+                if self.kwargs.get("dynamic_hold_thresh"):
+                    topk, n_drop, hold_thresh = (
+                        int(action[0]),
+                        int(action[1]),
+                        int(action[2]),
+                    )
+                else:
+                    topk, n_drop, hold_thresh = int(action[0]), int(action[1]), 1
+                num_position = int(state.position.sum())
+                n_drop_extra = max(num_position - topk, 0)
+                n_drop += n_drop_extra
+            else:
+                if self.kwargs.get("dynamic_hold_thresh"):
+                    topk, n_drop, hold_thresh = (
+                        self.topk,
+                        int(action[0]),
+                        int(action[1]),
+                    )
+                else:
+                    topk, n_drop, hold_thresh = self.topk, int(action), 1
         return TopkDropoutStrategyAction(
             signal=signal, topk=topk, n_drop=n_drop, hold_thresh=hold_thresh
         )
@@ -180,8 +219,8 @@ class TopkDropoutDiscreteDynamicSelectionStrategyActionInterpreter(
         self, state: TradeStrategyState, action: int
     ) -> TopkDropoutStrategyAction:
         assert 0 <= action < self.num_combinations
-        topk = state.initial_state.topk
         signal = state.signal
+        topk = state.initial_state.topk
         if not self.baseline:
             stock_weight_dict = state.trade_executor.trade_account.current_position.get_stock_weight_dict(
                 only_stock=False
@@ -479,22 +518,18 @@ class WeightStrategyActionInterpreter(
             weights = weights[index]
 
         # normalize
-        if self.normalize == "softmax":
+        if self.baseline or self.equal_weight:
+            weights = 1.0 / topk * np.ones_like(weights)
+        elif self.normalize == "softmax":
             weights = softmax(weights)
-        else:
+        elif self.normalize == "sum":
             weights[weights < 0] = 0
             weights /= weights.sum()
-
-        # select positive weights
-        index = weights > 0
-        stocks, weights = stocks[index], weights[index]
+        else:
+            weights = 1.0 / topk * np.ones_like(weights)
 
         # assign weight
-        w = 1.0 / topk
-        target_weight_position = {
-            stock: w if self.equal_weight else weight
-            for stock, weight in zip(stocks, weights)
-        }
+        target_weight_position = dict(zip(stocks, weights))
 
         return WeightStrategyAction(
             signal=signal, target_weight_position=target_weight_position
